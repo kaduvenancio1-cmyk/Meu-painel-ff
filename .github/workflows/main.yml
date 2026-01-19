@@ -5,6 +5,18 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Compilar
+
+      - name: Instalar Theos
         run: |
-          echo "Simulando compilacao"
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          
+      - name: Compilar dylib
+        run: |
+          export THEOS=~/theos
+          make package
+          
+      - name: Subir Arquivo
+        uses: actions/upload-artifact@v3
+        with:
+          name: Painel-Pronto
+          path: packages/*.deb
