@@ -1,4 +1,4 @@
-name: Compilar Painel
+name: Compilar
 on: push
 jobs:
   build:
@@ -8,14 +8,14 @@ jobs:
 
       - name: Instalar Theos
         run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          git clone --recursive https://github.com/theos/theos.git ~/theos
           
-      - name: Compilar dylib
+      - name: Compilar
         run: |
           export THEOS=~/theos
-          make package
+          make package FINALPACKAGE=1
           
-      - name: Subir Arquivo
+      - name: Upload
         uses: actions/upload-artifact@v3
         with:
           name: Painel-Pronto
