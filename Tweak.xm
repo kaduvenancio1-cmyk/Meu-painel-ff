@@ -29,13 +29,12 @@
     if (self) {
         [self limparGuest];
         
-        // Painel escondido por padrão
         self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
         self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
         self.pnlPreto.layer.cornerRadius = 10;
         self.pnlPreto.layer.borderWidth = 1.5;
         self.pnlPreto.layer.borderColor = [UIColor cyanColor].CGColor;
-        self.pnlPreto.hidden = YES; // Começa invisível
+        self.pnlPreto.hidden = YES; 
         [self addSubview:self.pnlPreto];
 
         self.rolagem = [[UIScrollView alloc] initWithFrame:self.pnlPreto.bounds];
@@ -51,19 +50,30 @@
         self.fovCircle.hidden = YES;
         [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
 
-        // GESTO: 3 DEDOS PARA ABRIR/FECHAR
         UITapGestureRecognizer *tap3 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestoMenu)];
         tap3.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:tap3];
 
         UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
         [self addGestureRecognizer:pan];
+        
+        // CORREÇÃO: Começa com tamanho zero para não travar o touch
+        self.frame = CGRectMake(50, 150, 0, 0);
     }
     return self;
 }
 
+// FUNÇÃO CORRIGIDA PARA LIBERAR O TOUCH
 - (void)gestoMenu {
     self.pnlPreto.hidden = !self.pnlPreto.hidden;
+    
+    if (self.pnlPreto.hidden) {
+        // Se escondeu o painel, encolhe a área para 0x0
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0);
+    } else {
+        // Se abriu o painel, volta para o tamanho real 220x350
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
+    }
 }
 
 - (void)montarLayout {
@@ -106,7 +116,7 @@
     }
 }
 
-- (void)executarBypass { [self limparGuest]; self.pnlPreto.hidden = YES; }
+- (void)executarBypass { [self limparGuest]; [self gestoMenu]; }
 - (void)addChave:(NSString *)txt y:(CGFloat *)yPos {
     UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(10, *yPos, 140, 30)];
     lab.text = txt; lab.textColor = [UIColor whiteColor];
@@ -115,13 +125,17 @@
     [self.rolagem addSubview:s];
     *yPos += 45;
 }
-- (void)arrastar:(UIPanGestureRecognizer *)g { self.center = [g locationInView:self.superview]; }
+- (void)arrastar:(UIPanGestureRecognizer *)g { 
+    if (!self.pnlPreto.hidden) {
+        self.center = [g locationInView:self.superview]; 
+    }
+}
 @end
 
 static void __attribute__((constructor)) init() {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 150, 220, 400)];
+        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 150, 220, 350)];
         [w addSubview:m];
     });
 }
