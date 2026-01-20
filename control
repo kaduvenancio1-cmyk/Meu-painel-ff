@@ -1,0 +1,9 @@
+Package: com.seu.meupainel
+Name: MeuPainel
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: Meu Painel Mod
+Maintainer: Kadu
+Author: Kadu
+Section: Tweaks
