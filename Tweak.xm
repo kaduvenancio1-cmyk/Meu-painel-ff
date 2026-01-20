@@ -1,88 +1,127 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
-#import <QuartzCore/QuartzCore.h>
 
-// OFFSETS TRAVADOS NA VERSÃO 1.120.8
 #define OFF_AIMBOT 0x439A180 
 #define OFF_FOV 0x3F9A1B0
 
-@interface SystemMenu : UIView
-@property (nonatomic, strong) UIView *pnlPrincipal;
-@property (nonatomic, strong) UIButton *btnAbrir;
+@interface KaduMenu : UIView
+@property (nonatomic, strong) UIView *pnlPreto;
+@property (nonatomic, strong) UIScrollView *rolagem;
+@property (nonatomic, strong) UISlider *barraFov;
+@property (nonatomic, strong) CAShapeLayer *fovCircle;
+@property (nonatomic, strong) UISwitch *swFov; 
 @end
 
-@implementation SystemMenu
+@implementation KaduMenu
 
-// LIMPEZA AUTOMÁTICA DE IDENTIFICADORES
-- (void)limparRastros {
-    NSString *docs = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+- (void)limparGuest {
+    NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
     NSArray *files = @[@"guest.dat", @"com.garena.msdk/guest.dat", @"Library/Caches/GuestAccount.dat"];
     NSFileManager *fm = [NSFileManager defaultManager];
     for (NSString *f in files) {
-        NSString *fullPath = [docs stringByAppendingPathComponent:f];
-        if ([fm fileExistsAtPath:fullPath]) { [fm removeItemAtPath:fullPath error:nil]; }
+        NSString *path = [docPath stringByAppendingPathComponent:f];
+        if ([fm fileExistsAtPath:path]) { [fm removeItemAtPath:path error:nil]; }
     }
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [self limparRastros];
+        [self limparGuest];
+        
+        // Painel escondido por padrão
+        self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
+        self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
+        self.pnlPreto.layer.cornerRadius = 10;
+        self.pnlPreto.layer.borderWidth = 1.5;
+        self.pnlPreto.layer.borderColor = [UIColor cyanColor].CGColor;
+        self.pnlPreto.hidden = YES; // Começa invisível
+        [self addSubview:self.pnlPreto];
 
-        // ÍCONE DISCRETO
-        self.btnAbrir = [UIButton buttonWithType:UIButtonTypeCustom];
-        self.btnAbrir.frame = CGRectMake(0, 0, 40, 40);
-        [self.btnAbrir setTitle:@"S" forState:UIControlStateNormal]; // 'S' de System
-        self.btnAbrir.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.5];
-        self.btnAbrir.layer.cornerRadius = 20;
-        [self.btnAbrir addTarget:self action:@selector(toggle) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:self.btnAbrir];
+        self.rolagem = [[UIScrollView alloc] initWithFrame:self.pnlPreto.bounds];
+        self.rolagem.contentSize = CGSizeMake(220, 550);
+        [self.pnlPreto addSubview:self.rolagem];
 
-        // PAINEL DE CONTROLE
-        self.pnlPrincipal = [[UIView alloc] initWithFrame:CGRectMake(0, 45, 170, 180)];
-        self.pnlPrincipal.backgroundColor = [UIColor colorWithRed:0.05 green:0.05 blue:0.05 alpha:0.9];
-        self.pnlPrincipal.layer.cornerRadius = 12;
-        self.pnlPrincipal.hidden = YES;
-        [self addSubview:self.pnlPrincipal];
+        [self montarLayout];
 
-        [self adicionarConteudo];
+        self.fovCircle = [CAShapeLayer layer];
+        self.fovCircle.strokeColor = [UIColor cyanColor].CGColor;
+        self.fovCircle.fillColor = [UIColor clearColor].CGColor;
+        self.fovCircle.lineWidth = 1.5;
+        self.fovCircle.hidden = YES;
+        [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
+
+        // GESTO: 3 DEDOS PARA ABRIR/FECHAR
+        UITapGestureRecognizer *tap3 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestoMenu)];
+        tap3.numberOfTouchesRequired = 3;
+        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:tap3];
+
+        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
+        [self addGestureRecognizer:pan];
     }
     return self;
 }
 
-- (void)adicionarConteudo {
-    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 170, 20)];
-    title.text = @"SYSTEM DATA v8";
-    title.textColor = [UIColor lightGrayColor];
-    title.textAlignment = NSTextAlignmentCenter;
-    title.font = [UIFont systemFontOfSize:12];
-    [self.pnlPrincipal addSubview:title];
-
-    UIButton *btnAtivar = [UIButton buttonWithType:UIButtonTypeSystem];
-    btnAtivar.frame = CGRectMake(10, 50, 150, 40);
-    [btnAtivar setTitle:@"INJETAR SEGURANÇA" forState:UIControlStateNormal];
-    [btnAtivar setBackgroundColor:[UIColor colorWithWhite:0.2 alpha:1.0]];
-    [btnAtivar setTitleColor:[UIColor cyanColor] forState:UIControlStateNormal];
-    [self.pnlPrincipal addSubview:btnAtivar];
-
-    UIButton *btnReset = [UIButton buttonWithType:UIButtonTypeSystem];
-    btnReset.frame = CGRectMake(10, 120, 150, 40);
-    [btnReset setTitle:@"LIMPAR GUEST" forState:UIControlStateNormal];
-    [btnReset setBackgroundColor:[UIColor colorWithRed:0.4 green:0.1 blue:0.1 alpha:1.0]];
-    [btnReset setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [btnReset addTarget:self action:@selector(limparRastros) forControlEvents:UIControlEventTouchUpInside];
-    [self.pnlPrincipal addSubview:btnReset];
+- (void)gestoMenu {
+    self.pnlPreto.hidden = !self.pnlPreto.hidden;
 }
 
-- (void)toggle { self.pnlPrincipal.hidden = !self.pnlPrincipal.hidden; }
+- (void)montarLayout {
+    CGFloat y = 15;
+    [self addChave:@"AIMBOT" y:&y];
+    [self addChave:@"ESP" y:&y];
+    
+    UILabel *lFov = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
+    lFov.text = @"ATIVAR FOV"; lFov.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lFov];
+    
+    self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+    [self.swFov addTarget:self action:@selector(toggleFov) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.swFov];
+    y += 45;
+    
+    self.barraFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
+    self.barraFov.minimumValue = 0; self.barraFov.maximumValue = 250;
+    [self.barraFov addTarget:self action:@selector(updateFov) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.barraFov]; y += 40;
 
+    [self addChave:@"CABEÇA" y:&y];
+    [self addChave:@"PEITO" y:&y];
+
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
+    b.frame = CGRectMake(10, y + 20, 200, 40);
+    [b setTitle:@"BYPASS & RESET" forState:UIControlStateNormal];
+    [b setBackgroundColor:[UIColor darkGrayColor]];
+    [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [b addTarget:self action:@selector(executarBypass) forControlEvents:UIControlEventTouchUpInside];
+    [self.rolagem addSubview:b];
+}
+
+- (void)toggleFov { self.fovCircle.hidden = !self.swFov.isOn; [self updateFov]; }
+- (void)updateFov {
+    if (self.swFov.isOn) {
+        CGFloat r = self.barraFov.value;
+        UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) radius:r startAngle:0 endAngle:M_PI*2 clockwise:YES];
+        self.fovCircle.path = p.CGPath;
+    }
+}
+
+- (void)executarBypass { [self limparGuest]; self.pnlPreto.hidden = YES; }
+- (void)addChave:(NSString *)txt y:(CGFloat *)yPos {
+    UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(10, *yPos, 140, 30)];
+    lab.text = txt; lab.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lab];
+    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *yPos, 50, 30)];
+    [self.rolagem addSubview:s];
+    *yPos += 45;
+}
+- (void)arrastar:(UIPanGestureRecognizer *)g { self.center = [g locationInView:self.superview]; }
 @end
 
 static void __attribute__((constructor)) init() {
-    // ATRASO DE 15 SEGUNDOS PARA SEGURANÇA
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *window = [[UIApplication sharedApplication] keyWindow];
-        SystemMenu *menu = [[SystemMenu alloc] initWithFrame:CGRectMake(40, 100, 170, 250)];
-        [window addSubview:menu];
+        UIWindow *w = [[UIApplication sharedApplication] keyWindow];
+        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 150, 220, 400)];
+        [w addSubview:m];
     });
 }
