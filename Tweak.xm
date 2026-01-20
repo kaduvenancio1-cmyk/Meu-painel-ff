@@ -1,125 +1,155 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
-// --- CONFIGURAÇÕES DE OFFSETS (VERSÃO 1.120.8) ---
-// Nota: Estes valores precisam ser atualizados conforme a versão do jogo
+// --- OFFSETS 1.120.8 ---
 #define OFF_AIMBOT 0x42B8A10 
 #define OFF_FOV 0x3F9A1B0
 
 @interface KaduMenu : UIView
-@property (nonatomic, strong) UIView *container;
-@property (nonatomic, strong) UIButton *btnToggle;
-@property (nonatomic, strong) UIScrollView *scroll;
-@property (nonatomic, strong) UISlider *fovSlider;
+@property (nonatomic, strong) UIView *pnlPreto;
+@property (nonatomic, strong) UIButton *btnMin;
+@property (nonatomic, strong) UIScrollView *rolagem;
+@property (nonatomic, strong) UISlider *barraFov;
+@property (nonatomic, strong) CAShapeLayer *fovCircle;
+@property (nonatomic, strong) UISwitch *swFov; 
 @end
 
 @implementation KaduMenu
 
+// FUNÇÃO SECRETA: LIMPAR CONTA BANIDA (GUEST)
+- (void)resetGuestAccount {
+    NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *guestFile = [docPath stringByAppendingPathComponent:@"guest.dat"];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if ([fm fileExistsAtPath:guestFile]) {
+        [fm removeItemAtPath:guestFile error:nil];
+    }
+}
+
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        // 1. Botão de Minimizar/Maximizar (+/-)
-        self.btnToggle = [UIButton buttonWithType:UIButtonTypeCustom];
-        self.btnToggle.frame = CGRectMake(0, 0, 40, 40);
-        [self.btnToggle setTitle:@"+" forState:UIControlStateNormal];
-        self.btnToggle.backgroundColor = [UIColor blackColor];
-        self.btnToggle.layer.cornerRadius = 20;
-        self.btnToggle.layer.borderWidth = 1;
-        self.btnToggle.layer.borderColor = [UIColor redColor].CGColor;
-        [self.btnToggle addTarget:self action:@selector(actionToggle) forControlEvents:UIControlEventTouchUpInside];
-        [self addSubview:self.btnToggle];
-
-        // 2. Painel Principal (Retângulo Preto)
-        self.container = [[UIView alloc] initWithFrame:CGRectMake(0, 45, 220, 320)];
-        self.container.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
-        self.container.layer.cornerRadius = 8;
-        self.container.hidden = YES; // Começa fechado
-        [self addSubview:self.container];
-
-        // 3. ScrollView interna
-        self.scroll = [[UIScrollView alloc] initWithFrame:self.container.bounds];
-        self.scroll.contentSize = CGSizeMake(220, 550);
-        [self.container addSubview:self.scroll];
-
-        [self carregarOpcoes];
+        [self resetGuestAccount]; // Limpa ao abrir
         
-        // Fazer o menu ser arrastável pela tela
-        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+        self.btnMin = [UIButton buttonWithType:UIButtonTypeCustom];
+        self.btnMin.frame = CGRectMake(0, 0, 45, 45);
+        [self.btnMin setTitle:@"+" forState:UIControlStateNormal];
+        self.btnMin.backgroundColor = [UIColor blackColor];
+        self.btnMin.layer.cornerRadius = 22.5;
+        self.btnMin.layer.borderColor = [UIColor cyanColor].CGColor;
+        self.btnMin.layer.borderWidth = 1.5;
+        [self.btnMin addTarget:self action:@selector(minimizar) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:self.btnMin];
+
+        self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 50, 220, 350)];
+        self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
+        self.pnlPreto.layer.cornerRadius = 10;
+        self.pnlPreto.hidden = YES;
+        [self addSubview:self.pnlPreto];
+
+        self.rolagem = [[UIScrollView alloc] initWithFrame:self.pnlPreto.bounds];
+        self.rolagem.contentSize = CGSizeMake(220, 600);
+        [self.pnlPreto addSubview:self.rolagem];
+
+        [self montarOpcoes];
+
+        self.fovCircle = [CAShapeLayer layer];
+        self.fovCircle.strokeColor = [UIColor cyanColor].CGColor;
+        self.fovCircle.fillColor = [UIColor clearColor].CGColor;
+        self.fovCircle.lineWidth = 1.5;
+        self.fovCircle.hidden = YES; // Começa desativado
+        [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
+
+        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
         [self addGestureRecognizer:pan];
     }
     return self;
 }
 
-- (void)carregarOpcoes {
+- (void)montarOpcoes {
     CGFloat y = 15;
-
-    // ORDEM DAS OPÇÕES
-    [self criarSwitch:@"AIMBOT" naPos:&y];
-    [self criarSwitch:@"ESP INIMIGO" naPos:&y];
-    [self criarSwitch:@"ATIVAR FOV" naPos:&y];
+    [self addOpcao:@"AIMBOT" y:&y];
+    [self addOpcao:@"ESP" y:&y];
     
-    // Slider do FOV
-    UILabel *lblFov = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 180, 20)];
-    lblFov.text = @"TAMANHO DO FOV:"; lblFov.textColor = [UIColor whiteColor];
-    lblFov.font = [UIFont systemFontOfSize:12];
-    [self.scroll addSubview:lblFov]; y += 25;
+    UILabel *labFov = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
+    labFov.text = @"ATIVAR FOV"; labFov.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:labFov];
+    
+    self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+    [self.swFov setOn:NO]; // Inicia em OFF
+    [self.swFov addTarget:self action:@selector(toggleFovVisual) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.swFov];
+    y += 45;
+    
+    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 150, 20)];
+    l.text = @"REGULAR FOV:"; l.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:l]; y += 20;
 
-    self.fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 190, 30)];
-    self.fovSlider.minimumValue = 0; self.fovSlider.maximumValue = 180;
-    [self.scroll addSubview:self.fovSlider]; y += 40;
+    self.barraFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
+    self.barraFov.minimumValue = 0; self.barraFov.maximumValue = 250;
+    [self.barraFov addTarget:self action:@selector(updateFovCircle) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.barraFov]; y += 45;
 
-    // Seleção de Alvo
-    [self criarSwitch:@"CABEÇA" naPos:&y];
-    [self criarSwitch:@"PEITO" naPos:&y];
-    [self criarSwitch:@"PÉ" naPos:&y];
+    [self addOpcao:@"CABEÇA" y:&y];
+    [self addOpcao:@"PEITO" y:&y];
+    [self addOpcao:@"PÉ" y:&y];
 
-    // BOTÃO BYPASS (ÚLTIMO)
-    UIButton *btnBypass = [UIButton buttonWithType:UIButtonTypeSystem];
-    btnBypass.frame = CGRectMake(10, y + 10, 200, 40);
-    [btnBypass setTitle:@"ATIVAR BYPASS & SAIR" forState:UIControlStateNormal];
-    [btnBypass setBackgroundColor:[UIColor darkGrayColor]];
-    [btnBypass setTitleColor:[UIColor cyanColor] forState:UIControlStateNormal];
-    [btnBypass addTarget:self action:@selector(ativarBypassTotal) forControlEvents:UIControlEventTouchUpInside];
-    [self.scroll addSubview:btnBypass];
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
+    b.frame = CGRectMake(10, y + 10, 200, 40);
+    [b setTitle:@"ATIVAR BYPASS" forState:UIControlStateNormal];
+    [b setBackgroundColor:[UIColor darkGrayColor]];
+    [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [b addTarget:self action:@selector(executarBypass) forControlEvents:UIControlEventTouchUpInside];
+    [self.rolagem addSubview:b];
 }
 
-- (void)actionToggle {
-    self.container.hidden = !self.container.hidden;
-    [self.btnToggle setTitle:self.container.hidden ? @"+" : @"-" forState:UIControlStateNormal];
+- (void)toggleFovVisual {
+    self.fovCircle.hidden = !self.swFov.isOn;
+    if (self.swFov.isOn) { [self updateFovCircle]; }
 }
 
-- (void)ativarBypassTotal {
-    // 1. Desativa logicamente as funções (Simulação)
-    // 2. Esconde o painel permanentemente
-    [UIView animateWithDuration:0.5 animations:^{
-        self.alpha = 0;
-    } completion:^(BOOL finished) {
-        [self removeFromSuperview]; // Remove o menu até reiniciar o jogo
-    }];
+- (void)updateFovCircle {
+    if (self.swFov.isOn) {
+        CGFloat radius = self.barraFov.value;
+        UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) 
+                                                            radius:radius 
+                                                        startAngle:0 
+                                                          endAngle:M_PI*2 
+                                                         clockwise:YES];
+        self.fovCircle.path = path.CGPath;
+    }
 }
 
-// Helper para criar botões rápido
-- (void)criarSwitch:(NSString *)nome naPos:(CGFloat *)y {
-    UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(10, *y, 140, 30)];
-    lab.text = nome; lab.textColor = [UIColor whiteColor];
-    [self.scroll addSubview:lab];
-    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *y, 50, 30)];
-    [self.scroll addSubview:s];
-    *y += 45;
+- (void)minimizar {
+    self.pnlPreto.hidden = !self.pnlPreto.hidden;
+    [self.btnMin setTitle:self.pnlPreto.hidden ? @"+" : @"-" forState:UIControlStateNormal];
 }
 
-- (void)handlePan:(UIPanGestureRecognizer *)p {
-    CGPoint loc = [p locationInView:self.superview];
-    self.center = loc;
+- (void)executarBypass {
+    [self resetGuestAccount]; // Limpa ao ativar bypass
+    self.hidden = YES;
+    [self.fovCircle removeFromSuperlayer];
+}
+
+- (void)addOpcao:(NSString *)txt y:(CGFloat *)yPos {
+    UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(10, *yPos, 140, 30)];
+    lab.text = txt; lab.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lab];
+    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *yPos, 50, 30)];
+    [s setOn:NO]; // Garante que tudo comece em OFF
+    [self.rolagem addSubview:s];
+    *yPos += 45;
+}
+
+- (void)arrastar:(UIPanGestureRecognizer *)g {
+    self.center = [g locationInView:self.superview];
 }
 @end
 
-// --- INICIALIZADOR (O QUE SEGURA O MENU NA GARENA) ---
-static void __attribute__((constructor)) inicializar() {
-    // Espera 7 segundos para garantir que a tela da Garena passou e o jogo carregou
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(7 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *win = [[UIApplication sharedApplication] keyWindow];
-        KaduMenu *menu = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 100, 220, 370)];
-        [win addSubview:menu];
+static void __attribute__((constructor)) init() {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *w = [[UIApplication sharedApplication] keyWindow];
+        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(40, 80, 220, 400)];
+        [w addSubview:m];
     });
 }
