@@ -1,7 +1,7 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
-// --- OFFSETS ATUALIZADOS PARA 1.120.9 (VERSÃO ATUAL) ---
+// OFFSETS ATUALIZADOS 1.120.9
 #define OFF_AIMBOT 0x43AF2C0 
 #define OFF_FOV 0x3FB13F0
 
@@ -15,34 +15,37 @@
 
 @implementation KaduMenu
 
-- (void)limparGuest {
-    NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSArray *files = @[@"guest.dat", @"com.garena.msdk/guest.dat", @"Library/Caches/GuestAccount.dat"];
+// LIMPEZA DE RASTROS NO COFRE DO SISTEMA
+- (void)limpezaMaster {
     NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSArray *files = @[@"guest.dat", @"com.garena.msdk/guest.dat", @"Library/Caches/GuestAccount.dat"];
     for (NSString *f in files) {
-        NSString *path = [docPath stringByAppendingPathComponent:f];
-        if ([fm fileExistsAtPath:path]) { [fm removeItemAtPath:path error:nil]; }
+        NSString *path = [docDir stringByAppendingPathComponent:f];
+        if ([fm fileExistsAtPath:path]) [fm removeItemAtPath:path error:nil];
     }
+    [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[[NSBundle mainBundle] bundleIdentifier]];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [self limparGuest];
+        [self limpezaMaster];
         
         self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
-        self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
-        self.pnlPreto.layer.cornerRadius = 10;
+        self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
+        self.pnlPreto.layer.cornerRadius = 15;
         self.pnlPreto.layer.borderWidth = 1.5;
         self.pnlPreto.layer.borderColor = [UIColor cyanColor].CGColor;
         self.pnlPreto.hidden = YES; 
         [self addSubview:self.pnlPreto];
 
         self.rolagem = [[UIScrollView alloc] initWithFrame:self.pnlPreto.bounds];
-        self.rolagem.contentSize = CGSizeMake(220, 550);
+        self.rolagem.contentSize = CGSizeMake(220, 500);
         [self.pnlPreto addSubview:self.rolagem];
 
-        [self montarLayout];
+        [self setupUI];
 
         self.fovCircle = [CAShapeLayer layer];
         self.fovCircle.strokeColor = [UIColor cyanColor].CGColor;
@@ -51,81 +54,71 @@
         self.fovCircle.hidden = YES;
         [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
 
-        UITapGestureRecognizer *tap3 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gestoMenu)];
-        tap3.numberOfTouchesRequired = 3;
-        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:tap3];
+        // COMANDO SECRETO: 3 DEDOS
+        UITapGestureRecognizer *t3 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gesto)];
+        t3.numberOfTouchesRequired = 3;
+        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t3];
 
-        UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
-        [self addGestureRecognizer:pan];
+        UIPanGestureRecognizer *p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(m:)];
+        [self addGestureRecognizer:p];
         
-        self.frame = CGRectMake(50, 150, 0, 0); // Começa sem travar o touch
+        self.frame = CGRectMake(50, 150, 0, 0); 
     }
     return self;
 }
 
-- (void)gestoMenu {
+- (void)gesto {
     self.pnlPreto.hidden = !self.pnlPreto.hidden;
-    if (self.pnlPreto.hidden) {
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0);
-    } else {
-        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
-    }
+    self.frame = self.pnlPreto.hidden ? CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0) : CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
 }
 
-- (void)montarLayout {
+- (void)setupUI {
     CGFloat y = 15;
-    [self addChave:@"AIMBOT" y:&y];
-    [self addChave:@"ESP" y:&y];
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 220, 20)];
+    title.text = @"KADU VIP - 1.120.9"; title.textColor = [UIColor whiteColor];
+    title.textAlignment = NSTextAlignmentCenter;
+    [self.rolagem addSubview:title]; y += 40;
+
+    [self addSw:@"AIMBOT" y:&y];
+    [self addSw:@"ESP" y:&y];
     
-    UILabel *lFov = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
-    lFov.text = @"ATIVAR FOV"; lFov.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:lFov];
-    
-    self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
-    [self.swFov addTarget:self action:@selector(toggleFov) forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:self.swFov];
-    y += 45;
-    
+    UISwitch *sf = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+    [sf addTarget:self action:@selector(tFov:) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:sf];
+    UILabel *lf = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
+    lf.text = @"MOSTRAR FOV"; lf.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lf]; y += 45;
+
     self.barraFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
-    self.barraFov.minimumValue = 0; self.barraFov.maximumValue = 250;
-    [self.barraFov addTarget:self action:@selector(updateFov) forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:self.barraFov]; y += 40;
+    self.barraFov.maximumValue = 250;
+    [self.barraFov addTarget:self action:@selector(uFov) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.barraFov]; y += 50;
 
-    [self addChave:@"CABEÇA" y:&y];
-    [self addChave:@"PEITO" y:&y];
-
-    UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
-    b.frame = CGRectMake(10, y + 20, 200, 40);
-    [b setTitle:@"BYPASS & RESET" forState:UIControlStateNormal];
-    [b setBackgroundColor:[UIColor darkGrayColor]];
-    [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [b addTarget:self action:@selector(executarBypass) forControlEvents:UIControlEventTouchUpInside];
-    [self.rolagem addSubview:b];
+    UIButton *btnB = [UIButton buttonWithType:UIButtonTypeSystem];
+    btnB.frame = CGRectMake(10, y, 200, 40);
+    [btnB setTitle:@"BYPASS & RESET" forState:UIControlStateNormal];
+    [btnB setBackgroundColor:[UIColor colorWithRed:0.5 green:0 blue:0 alpha:1]];
+    [btnB setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [btnB addTarget:self action:@selector(limpezaMaster) forControlEvents:UIControlEventTouchUpInside];
+    [self.rolagem addSubview:btnB];
 }
 
-- (void)toggleFov { self.fovCircle.hidden = !self.swFov.isOn; [self updateFov]; }
-- (void)updateFov {
-    if (self.swFov.isOn) {
-        CGFloat r = self.barraFov.value;
-        UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) radius:r startAngle:0 endAngle:M_PI*2 clockwise:YES];
+- (void)tFov:(UISwitch *)s { self.fovCircle.hidden = !s.isOn; [self uFov]; }
+- (void)uFov {
+    if (!self.fovCircle.hidden) {
+        UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) radius:self.barraFov.value startAngle:0 endAngle:M_PI*2 clockwise:YES];
         self.fovCircle.path = p.CGPath;
     }
 }
-
-- (void)executarBypass { [self limparGuest]; [self gestoMenu]; }
-- (void)addChave:(NSString *)txt y:(CGFloat *)yPos {
-    UILabel *lab = [[UILabel alloc] initWithFrame:CGRectMake(10, *yPos, 140, 30)];
-    lab.text = txt; lab.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:lab];
-    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *yPos, 50, 30)];
+- (void)addSw:(NSString *)t y:(CGFloat *)y {
+    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, *y, 140, 30)];
+    l.text = t; l.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:l];
+    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *y, 50, 30)];
     [self.rolagem addSubview:s];
-    *yPos += 45;
+    *y += 45;
 }
-- (void)arrastar:(UIPanGestureRecognizer *)g { 
-    if (!self.pnlPreto.hidden) {
-        self.center = [g locationInView:self.superview]; 
-    }
-}
+- (void)m:(UIPanGestureRecognizer *)g { if (!self.pnlPreto.hidden) self.center = [g locationInView:self.superview]; }
 @end
 
 static void __attribute__((constructor)) init() {
