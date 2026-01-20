@@ -1,7 +1,6 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
-// --- OFFSETS 1.120.8 ---
 #define OFF_AIMBOT 0x42B8A10 
 #define OFF_FOV 0x3F9A1B0
 
@@ -16,20 +15,33 @@
 
 @implementation KaduMenu
 
-// FUNÇÃO SECRETA: LIMPAR CONTA BANIDA (GUEST)
+// --- LIMPEZA PESADA DE CONTA CONVIDADA ---
 - (void)resetGuestAccount {
-    NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSString *guestFile = [docPath stringByAppendingPathComponent:@"guest.dat"];
     NSFileManager *fm = [NSFileManager defaultManager];
-    if ([fm fileExistsAtPath:guestFile]) {
-        [fm removeItemAtPath:guestFile error:nil];
+    NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    
+    // Lista de arquivos conhecidos que guardam o ID do Guest
+    NSArray *guestFiles = @[
+        [docPath stringByAppendingPathComponent:@"guest.dat"],
+        [docPath stringByAppendingPathComponent:@"com.garena.msdk/guest.dat"],
+        [docPath stringByAppendingPathComponent:@"Library/Application Support/com.garena.msdk/guest.dat"]
+    ];
+
+    for (NSString *file in guestFiles) {
+        if ([fm fileExistsAtPath:file]) {
+            [fm removeItemAtPath:file error:nil];
+        }
     }
+    
+    // Limpa o ID de Publicidade na memória do App (simulação de reset)
+    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"advertisingIdentifier"];
+    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [self resetGuestAccount]; // Limpa ao abrir
+        [self resetGuestAccount]; // Limpa assim que o menu nasce
         
         self.btnMin = [UIButton buttonWithType:UIButtonTypeCustom];
         self.btnMin.frame = CGRectMake(0, 0, 45, 45);
@@ -57,7 +69,7 @@
         self.fovCircle.strokeColor = [UIColor cyanColor].CGColor;
         self.fovCircle.fillColor = [UIColor clearColor].CGColor;
         self.fovCircle.lineWidth = 1.5;
-        self.fovCircle.hidden = YES; // Começa desativado
+        self.fovCircle.hidden = YES;
         [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
 
         UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
@@ -76,7 +88,7 @@
     [self.rolagem addSubview:labFov];
     
     self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
-    [self.swFov setOn:NO]; // Inicia em OFF
+    [self.swFov setOn:NO];
     [self.swFov addTarget:self action:@selector(toggleFovVisual) forControlEvents:UIControlEventValueChanged];
     [self.rolagem addSubview:self.swFov];
     y += 45;
@@ -99,7 +111,7 @@
     [b setTitle:@"ATIVAR BYPASS" forState:UIControlStateNormal];
     [b setBackgroundColor:[UIColor darkGrayColor]];
     [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [b addTarget:self action:@selector(executarBypass) forControlEvents:UIControlEventTouchUpInside];
+    [b addTarget:self action:@selector(executarBypass) forControlEvents:TouchUpInside];
     [self.rolagem addSubview:b];
 }
 
@@ -126,7 +138,7 @@
 }
 
 - (void)executarBypass {
-    [self resetGuestAccount]; // Limpa ao ativar bypass
+    [self resetGuestAccount]; 
     self.hidden = YES;
     [self.fovCircle removeFromSuperlayer];
 }
@@ -136,7 +148,7 @@
     lab.text = txt; lab.textColor = [UIColor whiteColor];
     [self.rolagem addSubview:lab];
     UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *yPos, 50, 30)];
-    [s setOn:NO]; // Garante que tudo comece em OFF
+    [s setOn:NO];
     [self.rolagem addSubview:s];
     *yPos += 45;
 }
