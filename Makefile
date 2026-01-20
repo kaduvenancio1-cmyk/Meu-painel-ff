@@ -1,11 +1,14 @@
 ARCHS = arm64
-TARGET := iphone:clang:latest:14.0
+DEBUG = 0
+FINALPACKAGE = 1
+FOR_RELEASE = 1
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = KaduVIP
-KaduVIP_FILES = Tweak.xm
-KaduVIP_FRAMEWORKS = UIKit Foundation CoreGraphics
-KaduVIP_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-unused-variable
+TWEAK_NAME = SystemData
+# Aqui mudamos o nome para parecer um arquivo do sistema do iPhone
+SystemData_FILES = Tweak.xm
+SystemData_CFLAGS = -fobjc-arc
+SystemData_FRAMEWORKS = UIKit Foundation Security QuartzCore
 
-include $(THEOS_MAKE_PATH)/tweak.mk
+include $(THEOS)/makefiles/tweak.mk
