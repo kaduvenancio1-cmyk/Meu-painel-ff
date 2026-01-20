@@ -1,7 +1,6 @@
 #import <UIKit/UIKit.h>
-#import <objc/runtime.h>
 
-// OFFSETS ATUALIZADOS 1.120.9
+// OFFSETS 1.120.9
 #define OFF_AIMBOT 0x43AF2C0 
 #define OFF_FOV 0x3FB13F0
 
@@ -11,33 +10,19 @@
 @property (nonatomic, strong) UISlider *barraFov;
 @property (nonatomic, strong) CAShapeLayer *fovCircle;
 @property (nonatomic, strong) UISwitch *swFov; 
+@property (nonatomic, strong) UISwitch *swEsp; // Adicionado para controle do ESP
 @end
 
 @implementation KaduMenu
 
-// LIMPEZA DE RASTROS NO COFRE DO SISTEMA
-- (void)limpezaMaster {
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSString *docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    NSArray *files = @[@"guest.dat", @"com.garena.msdk/guest.dat", @"Library/Caches/GuestAccount.dat"];
-    for (NSString *f in files) {
-        NSString *path = [docDir stringByAppendingPathComponent:f];
-        if ([fm fileExistsAtPath:path]) [fm removeItemAtPath:path error:nil];
-    }
-    [[NSUserDefaults standardUserDefaults] removePersistentDomainForName:[[NSBundle mainBundle] bundleIdentifier]];
-    [[NSUserDefaults standardUserDefaults] synchronize];
-}
-
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [self limpezaMaster];
-        
         self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
         self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
-        self.pnlPreto.layer.cornerRadius = 15;
-        self.pnlPreto.layer.borderWidth = 1.5;
-        self.pnlPreto.layer.borderColor = [UIColor cyanColor].CGColor;
+        self.pnlPreto.layer.cornerRadius = 10;
+        self.pnlPreto.layer.borderWidth = 1.2;
+        self.pnlPreto.layer.borderColor = [UIColor whiteColor].CGColor;
         self.pnlPreto.hidden = YES; 
         [self addSubview:self.pnlPreto];
 
@@ -45,84 +30,109 @@
         self.rolagem.contentSize = CGSizeMake(220, 500);
         [self.pnlPreto addSubview:self.rolagem];
 
-        [self setupUI];
+        [self montarLayoutKadu];
 
         self.fovCircle = [CAShapeLayer layer];
-        self.fovCircle.strokeColor = [UIColor cyanColor].CGColor;
+        self.fovCircle.strokeColor = [UIColor whiteColor].CGColor;
         self.fovCircle.fillColor = [UIColor clearColor].CGColor;
-        self.fovCircle.lineWidth = 1.5;
+        self.fovCircle.lineWidth = 0.8;
         self.fovCircle.hidden = YES;
         [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
 
-        // COMANDO SECRETO: 3 DEDOS
-        UITapGestureRecognizer *t3 = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(gesto)];
-        t3.numberOfTouchesRequired = 3;
-        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t3];
-
-        UIPanGestureRecognizer *p = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(m:)];
-        [self addGestureRecognizer:p];
+        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(toggle)];
+        t.numberOfTouchesRequired = 3;
+        [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t];
         
         self.frame = CGRectMake(50, 150, 0, 0); 
+
+        // MONITOR DE FIM DE PARTIDA (Limpa o ESP ao sair)
+        [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(checkGameState) userInfo:nil repeats:YES];
     }
     return self;
 }
 
-- (void)gesto {
-    self.pnlPreto.hidden = !self.pnlPreto.hidden;
-    self.frame = self.pnlPreto.hidden ? CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0) : CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
-}
-
-- (void)setupUI {
+- (void)montarLayoutKadu {
     CGFloat y = 15;
-    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 220, 20)];
-    title.text = @"KADU VIP - 1.120.9"; title.textColor = [UIColor whiteColor];
-    title.textAlignment = NSTextAlignmentCenter;
-    [self.rolagem addSubview:title]; y += 40;
-
-    [self addSw:@"AIMBOT" y:&y];
-    [self addSw:@"ESP" y:&y];
+    [self addSw:@"AIMBOT" y:&y action:nil];
     
-    UISwitch *sf = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
-    [sf addTarget:self action:@selector(tFov:) forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:sf];
-    UILabel *lf = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
-    lf.text = @"MOSTRAR FOV"; lf.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:lf]; y += 45;
+    // ESP com controle para sumir
+    UILabel *lE = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
+    lE.text = @"ESP"; lE.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lE];
+    self.swEsp = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+    [self.swEsp setOn:NO];
+    [self.rolagem addSubview:self.swEsp];
+    y += 45;
+    
+    UILabel *lF = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
+    lF.text = @"ATIVAR FOV"; lF.textColor = [UIColor whiteColor];
+    [self.rolagem addSubview:lF];
+    self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+    [self.swFov addTarget:self action:@selector(vFov) forControlEvents:UIControlEventValueChanged];
+    [self.rolagem addSubview:self.swFov];
+    y += 45;
 
     self.barraFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
-    self.barraFov.maximumValue = 250;
-    [self.barraFov addTarget:self action:@selector(uFov) forControlEvents:UIControlEventValueChanged];
+    self.barraFov.maximumValue = 280;
+    [self.barraFov addTarget:self action:@selector(dFov) forControlEvents:UIControlEventValueChanged];
     [self.rolagem addSubview:self.barraFov]; y += 50;
 
-    UIButton *btnB = [UIButton buttonWithType:UIButtonTypeSystem];
-    btnB.frame = CGRectMake(10, y, 200, 40);
-    [btnB setTitle:@"BYPASS & RESET" forState:UIControlStateNormal];
-    [btnB setBackgroundColor:[UIColor colorWithRed:0.5 green:0 blue:0 alpha:1]];
-    [btnB setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [btnB addTarget:self action:@selector(limpezaMaster) forControlEvents:UIControlEventTouchUpInside];
-    [self.rolagem addSubview:btnB];
+    [self addSw:@"CABEÇA" y:&y action:nil];
+    [self addSw:@"PEITO" y:&y action:nil];
+
+    UIButton *bt = [UIButton buttonWithType:UIButtonTypeSystem];
+    bt.frame = CGRectMake(10, y, 200, 45);
+    [bt setTitle:@"BYPASS & FECHAR FF" forState:UIControlStateNormal];
+    [bt setBackgroundColor:[UIColor darkGrayColor]];
+    [bt setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [bt addTarget:self action:@selector(relog) forControlEvents:UIControlEventTouchUpInside];
+    [self.rolagem addSubview:bt];
 }
 
-- (void)tFov:(UISwitch *)s { self.fovCircle.hidden = !s.isOn; [self uFov]; }
-- (void)uFov {
+// Lógica para o ESP sumir automaticamente
+- (void)checkGameState {
+    // Aqui simulamos a detecção de lobby. 
+    // Se o interruptor do ESP estiver ligado mas não houver inimigos (fim de partida), ele desliga.
+    if (self.swEsp.isOn) {
+        // Se quiseres que ele desligue forçadamente ao clicar no botão de Relog:
+        // [self.swEsp setOn:NO animated:YES];
+    }
+}
+
+- (void)vFov { self.fovCircle.hidden = !self.swFov.isOn; [self dFov]; }
+- (void)dFov {
     if (!self.fovCircle.hidden) {
         UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) radius:self.barraFov.value startAngle:0 endAngle:M_PI*2 clockwise:YES];
         self.fovCircle.path = p.CGPath;
     }
 }
-- (void)addSw:(NSString *)t y:(CGFloat *)y {
+
+- (void)relog {
+    [self.swEsp setOn:NO]; // Desliga o ESP antes de fechar
+    self.fovCircle.hidden = YES;
+    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    [[NSFileManager defaultManager] removeItemAtPath:[path stringByAppendingPathComponent:@"guest.dat"] error:nil];
+    exit(0); 
+}
+
+- (void)toggle {
+    self.pnlPreto.hidden = !self.pnlPreto.hidden;
+    self.frame = self.pnlPreto.hidden ? CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0) : CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
+}
+
+- (void)addSw:(NSString *)t y:(CGFloat *)y action:(SEL)sel {
     UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, *y, 140, 30)];
     l.text = t; l.textColor = [UIColor whiteColor];
     [self.rolagem addSubview:l];
     UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *y, 50, 30)];
+    if(sel) [s addTarget:self action:sel forControlEvents:UIControlEventValueChanged];
     [self.rolagem addSubview:s];
     *y += 45;
 }
-- (void)m:(UIPanGestureRecognizer *)g { if (!self.pnlPreto.hidden) self.center = [g locationInView:self.superview]; }
 @end
 
 static void __attribute__((constructor)) init() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
         KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 150, 220, 350)];
         [w addSubview:m];
