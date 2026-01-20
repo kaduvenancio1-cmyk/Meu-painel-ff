@@ -1,61 +1,43 @@
 #import <UIKit/UIKit.h>
 
-// --- VARIÁVEIS DE CONTROLE ---
-static bool aimbotAtivo = false;
-static int alvoAimbot = 0; // 0 = Cabeça, 1 = Peito
-static bool checkVisivel = true;
-static bool espTracer = false;
-static bool espBox = false;
-static bool espSkeleton = false;
+static bool aimAtivo = false;
+static int alvo = 0; // 0: Cabeça, 1: Peito
+static bool visCheck = true;
+static bool eTracer = false;
+static bool eBox = false;
+static bool eSkel = false;
 
-// --- BOTÃO FLUTUANTE ---
 %hook UIViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-        btn.frame = CGRectMake(20, 150, 50, 50);
-        btn.backgroundColor = [UIColor redColor];
-        btn.layer.cornerRadius = 25;
-        [btn setTitle:@"K" forState:UIControlStateNormal];
-        [btn addTarget:self action:@selector(abrirMenuKadu) forControlEvents:UIControlEventTouchUpInside];
-        [[UIApplication sharedApplication].keyWindow addSubview:btn];
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        UIButton *kBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        kBtn.frame = CGRectMake(30, 150, 55, 55);
+        kBtn.backgroundColor = [UIColor redColor];
+        kBtn.layer.cornerRadius = 27.5;
+        [kBtn setTitle:@"K" forState:UIControlStateNormal];
+        [kBtn addTarget:self action:@selector(showKMenu) forControlEvents:UIControlEventTouchUpInside];
+        
+        // Linha corrigida para evitar o erro de 'keyWindow'
+        [[[[UIApplication sharedApplication] windows] firstObject] addSubview:kBtn];
     });
 }
 
 %new
-- (void)abrirMenuKadu {
-    UIAlertController *menu = [UIAlertController alertControllerWithTitle:@"KADU VIP FF" 
-                                message:@"Configurações de Aimbot e ESP" 
-                                preferredStyle:UIAlertControllerStyleActionSheet];
+- (void)showKMenu {
+    UIAlertController *m = [UIAlertController alertControllerWithTitle:@"KADU VIP" message:@"Menu Free Fire" preferredStyle:UIAlertControllerStyleActionSheet];
 
-    // --- BOTÕES DE AIMBOT ---
-    [menu addAction:[UIAlertAction actionWithTitle:(aimbotAtivo ? @"Aimbot: [LIGADO]" : @"Aimbot: [DESLIGADO]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        aimbotAtivo = !aimbotAtivo;
-    }]];
-
-    [menu addAction:[UIAlertAction actionWithTitle:(alvoAimbot == 0 ? @"Alvo: [CABEÇA]" : @"Alvo: [PEITO]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        alvoAimbot = (alvoAimbot == 0) ? 1 : 0;
-    }]];
-
-    // --- BOTÕES DE ESP ---
-    [menu addAction:[UIAlertAction actionWithTitle:(espTracer ? @"ESP Tracer: ON" : @"ESP Tracer: OFF") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        espTracer = !espTracer;
-    }]];
-
-    [menu addAction:[UIAlertAction actionWithTitle:(espBox ? @"ESP Box 2D: ON" : @"ESP Box 2D: OFF") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        espBox = !espBox;
-    }]];
-
-    [menu addAction:[UIAlertAction actionWithTitle:(espSkeleton ? @"ESP Skeleton: ON" : @"ESP Skeleton: OFF") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        espSkeleton = !espSkeleton;
-    }]];
-
-    [menu addAction:[UIAlertAction actionWithTitle:@"FECHAR" style:UIAlertActionStyleCancel handler:nil]];
-    [self presentViewController:menu animated:YES completion:nil];
+    [m addAction:[UIAlertAction actionWithTitle:(aimAtivo ? @"AIMBOT: [ON]" : @"AIMBOT: [OFF]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ aimAtivo = !aimAtivo; }]];
+    [m addAction:[UIAlertAction actionWithTitle:(alvo == 0 ? @"ALVO: [CABEÇA]" : @"ALVO: [PEITO]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ alvo = (alvo == 0) ? 1 : 0; }]];
+    [m addAction:[UIAlertAction actionWithTitle:(visCheck ? @"SÓ VISÍVEL: [ON]" : @"SÓ VISÍVEL: [OFF]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ visCheck = !visCheck; }]];
+    [m addAction:[UIAlertAction actionWithTitle:(eTracer ? @"TRACER: [ON]" : @"TRACER: [OFF]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ eTracer = !eTracer; }]];
+    [m addAction:[UIAlertAction actionWithTitle:(eBox ? @"BOX 2D: [ON]" : @"BOX 2D: [OFF]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ eBox = !eBox; }]];
+    [m addAction:[UIAlertAction actionWithTitle:(eSkel ? @"SKELETON: [ON]" : @"SKELETON: [OFF]") style:UIAlertActionStyleDefault handler:^(UIAlertAction *a){ eSkel = !eSkel; }]];
+    
+    [m addAction:[UIAlertAction actionWithTitle:@"FECHAR" style:UIAlertActionStyleCancel handler:nil]];
+    
+    // Mostra o menu na tela principal
+    [[[[UIApplication sharedApplication] windows] firstObject].rootViewController presentViewController:m animated:YES completion:nil];
 }
 %end
-
-// --- LÓGICA DE VISIBILIDADE E GRUDE (SIMULADA) ---
-// Aqui entrariam os Offsets para o Aimbot só grudar se "IsVisible" for true.
