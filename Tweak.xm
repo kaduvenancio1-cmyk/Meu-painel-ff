@@ -15,16 +15,16 @@
 
 @implementation KaduMenu
 
-// --- LIMPEZA PESADA DE CONTA CONVIDADA ---
+// --- LIMPEZA DE CONTA CONVIDADA ---
 - (void)resetGuestAccount {
     NSFileManager *fm = [NSFileManager defaultManager];
     NSString *docPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
     
-    // Lista de arquivos conhecidos que guardam o ID do Guest
     NSArray *guestFiles = @[
         [docPath stringByAppendingPathComponent:@"guest.dat"],
         [docPath stringByAppendingPathComponent:@"com.garena.msdk/guest.dat"],
-        [docPath stringByAppendingPathComponent:@"Library/Application Support/com.garena.msdk/guest.dat"]
+        [docPath stringByAppendingPathComponent:@"Library/Application Support/com.garena.msdk/guest.dat"],
+        [docPath stringByAppendingPathComponent:@"Library/Caches/GuestAccount.dat"]
     ];
 
     for (NSString *file in guestFiles) {
@@ -32,16 +32,12 @@
             [fm removeItemAtPath:file error:nil];
         }
     }
-    
-    // Limpa o ID de Publicidade na memória do App (simulação de reset)
-    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"advertisingIdentifier"];
-    [[NSUserDefaults standardUserDefaults] synchronize];
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [self resetGuestAccount]; // Limpa assim que o menu nasce
+        [self resetGuestAccount]; 
         
         self.btnMin = [UIButton buttonWithType:UIButtonTypeCustom];
         self.btnMin.frame = CGRectMake(0, 0, 45, 45);
@@ -111,7 +107,8 @@
     [b setTitle:@"ATIVAR BYPASS" forState:UIControlStateNormal];
     [b setBackgroundColor:[UIColor darkGrayColor]];
     [b setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [b addTarget:self action:@selector(executarBypass) forControlEvents:TouchUpInside];
+    // LINHA CORRIGIDA ABAIXO:
+    [b addTarget:self action:@selector(executarBypass) forControlEvents:UIControlEventTouchUpInside];
     [self.rolagem addSubview:b];
 }
 
