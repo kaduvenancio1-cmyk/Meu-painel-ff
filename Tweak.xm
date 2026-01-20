@@ -1,8 +1,9 @@
 #import <UIKit/UIKit.h>
 #import <objc/runtime.h>
 
-#define OFF_AIMBOT 0x439A180 
-#define OFF_FOV 0x3F9A1B0
+// --- OFFSETS ATUALIZADOS PARA 1.120.9 (VERSÃO ATUAL) ---
+#define OFF_AIMBOT 0x43AF2C0 
+#define OFF_FOV 0x3FB13F0
 
 @interface KaduMenu : UIView
 @property (nonatomic, strong) UIView *pnlPreto;
@@ -57,21 +58,16 @@
         UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(arrastar:)];
         [self addGestureRecognizer:pan];
         
-        // CORREÇÃO: Começa com tamanho zero para não travar o touch
-        self.frame = CGRectMake(50, 150, 0, 0);
+        self.frame = CGRectMake(50, 150, 0, 0); // Começa sem travar o touch
     }
     return self;
 }
 
-// FUNÇÃO CORRIGIDA PARA LIBERAR O TOUCH
 - (void)gestoMenu {
     self.pnlPreto.hidden = !self.pnlPreto.hidden;
-    
     if (self.pnlPreto.hidden) {
-        // Se escondeu o painel, encolhe a área para 0x0
         self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0);
     } else {
-        // Se abriu o painel, volta para o tamanho real 220x350
         self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
     }
 }
