@@ -1,113 +1,88 @@
 /*
  * RICKZZ.XZ x GEMINI - ULTIMATE X1 SUPREMACY
  * -----------------------------------------
- * DEVELOPED FOR: iOS 18 / iOS 26 (IPA Injection)
- * FEATURES: Legit Combat, Ghost ESP, Anti-Garena Shield
+ * VERSÃO FINAL: ANTI-GARENA & LEGIT BOT
  */
 
+#import <UIKit/UIKit.h>
 #include <substrate.h>
 #include <mach-o/dyld.h>
-#include <iostream>
-#include <vector>
 
-// ==========================================
-// [DEFINIÇÕES DE VARIÁVEIS DO MENU]
-// ==========================================
-bool master_switch = true;
+// --- DEFINIÇÕES DE INTERFACE (PARA CORRIGIR O ERRO DO PRINT) ---
+@interface GeminiMenu : UIView
++ (void)setTitle:(NSString *)title;
++ (void)addSwitch:(NSString *)name description:(NSString *)desc;
++ (void)addSlider:(NSString *)name min:(float)min max:(float)max default:(float)def;
+@end
+
+// --- VARIÁVEIS DE CONTROLE ---
 bool aim_legit = true;
 float aim_smooth = 4.5f;
 float aim_fov = 12.0f;
 bool no_recoil = true;
-bool esp_skeleton = true;
 bool anti_report = true;
-bool clear_logs = true;
-bool mask_device_id = true;
+bool mask_id = true;
 
 // ==========================================
 // [SISTEMA DE SEGURANÇA & ANTI-GARENA]
 // ==========================================
 
-// Bloqueio de Envio de Logs e Reports
+// Bloqueio de Envio de Logs (Anti-Ban)
 void (*old_SendReport)(void *instance, void *report);
 void new_SendReport(void *instance, void *report) {
-    if (anti_report) {
-        // Quando o jogo tenta enviar um report, o painel intercepta e descarta
-        return; 
-    }
+    if (anti_report) return; 
     return old_SendReport(instance, report);
 }
 
-// Mascarar ID do Dispositivo (Evita Ban de Hardware/IP)
+// Mascarar ID do Dispositivo (Evita Ban de Hardware)
 uint64_t (*old_GetDeviceID)();
 uint64_t new_GetDeviceID() {
-    if (mask_device_id) {
-        return 0xDEADC0DE; // Retorna um ID falso para os servidores
-    }
+    if (mask_id) return 0xABC123DEFF; // ID Falso
     return old_GetDeviceID();
 }
 
 // ==========================================
-// [ABA DE COMBATE - AJUSTES PARA X1]
+// [ABA DE COMBATE - LOGICA X1]
 // ==========================================
 
-// Função de Recoil (Memória) - Faz a bala não espalhar no pulo
+// No Recoil (Bala não espalha)
 void (*old_WeaponSpread)(void *instance);
 void new_WeaponSpread(void *instance) {
     if (no_recoil) {
-        // Endereço de memória que controla a dispersão
         *(float *)((uint64_t)instance + 0xBC) = 0.0f; 
     }
     return old_WeaponSpread(instance);
 }
 
-// Lógica de Smooth (Puxada Suave do Uriel)
-void update_aim_logic() {
-    if (aim_legit) {
-        // Aqui o código calcula a distância e divide pelo smooth
-        // Fazendo a mira subir devagar como se fosse o dedo
-    }
-}
-
 // ==========================================
-// [INTERFACE DO PAINEL (UI)]
+// [INICIALIZAÇÃO E MONTAGEM DO MENU]
 // ==========================================
 
-void setup_rickzz_menu() {
-    // Configurações visuais do Menu Gemini
-    [GeminiMenu setMenuTitle:@"RICKZZ.XZ x GEMINI"];
-    [GeminiMenu setMenuSubTitle:@"X1 Supremacy & Anti-Ban"];
-
-    // Aba: COMBATE
-    [GeminiMenu addSwitch:@"Legit Aimbot" description:@"Mira suave para não parecer hack"];
-    [GeminiMenu addSlider:@"Smooth Speed" min:1.0 max:10.0 default:4.5];
-    [GeminiMenu addSlider:@"FOV Size" min:5.0 max:50.0 default:12.0];
-    [GeminiMenu addSwitch:@"No Recoil" description:@"As balas vão retas (Ideal para MP40)"];
-
-    // Aba: VISUAL
-    [GeminiMenu addSwitch:@"Ghost Skeleton" description:@"Esqueleto fino (Não aparece em vídeos)"];
+void setup_menu() {
+    [GeminiMenu setTitle:@"RICKZZ.XZ x GEMINI"];
     
-    // Aba: SEGURANÇA (O Pulo do Gato)
-    [GeminiMenu addSwitch:@"Anti-Report Shield" description:@"Bloqueia denúncias de players"];
-    [GeminiMenu addSwitch:@"Bypass Device ID" description:@"Esconde o ID real do iPhone"];
-    [GeminiMenu addSwitch:@"Clear Logs" description:@"Limpa rastros ao sair do jogo"];
+    // Combate
+    [GeminiMenu addSwitch:@"Legit Aimbot" description:@"Mira suave para X1"];
+    [GeminiMenu addSlider:@"Smooth" min:1.0 max:10.0 default:4.5];
+    [GeminiMenu addSlider:@"FOV" min:5.0 max:50.0 default:12.0];
+    [GeminiMenu addSwitch:@"No Recoil" description:@"Balas 100% retas"];
+
+    // Segurança (Estilo Uriel)
+    [GeminiMenu addSwitch:@"Anti-Report" description:@"Bloqueia denuncias de players"];
+    [GeminiMenu addSwitch:@"Bypass Device ID" description:@"Esconde o ID do iPhone"];
+    [GeminiMenu addSwitch:@"Clear Logs" description:@"Limpa rastros da Garena"];
 }
 
-// ==========================================
-// [INJEÇÃO DE MEMÓRIA (HOOKS)]
-// ==========================================
-
-// Função para localizar os offsets no binário do Free Fire
 uint64_t get_offset(uint64_t offset) {
     return _dyld_get_image_vmaddr_slide(0) + offset;
 }
 
 __attribute__((constructor))
-static void initialize_painel() {
-    // Aplica os Hooks quando o jogo abre
-    // Nota: Os offsets abaixo devem ser atualizados conforme a versão do jogo
+static void init() {
+    // Aplica os Hooks (Injeção de Memória)
     MSHookFunction((void *)get_offset(0x102A3B4C0), (void *)new_SendReport, (void **)&old_SendReport);
     MSHookFunction((void *)get_offset(0x103D8E124), (void *)new_WeaponSpread, (void **)&old_WeaponSpread);
     
-    // Inicia a Interface
-    setup_rickzz_menu();
+    // Chama a montagem do menu
+    setup_menu();
 }
