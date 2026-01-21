@@ -1,140 +1,105 @@
 #import <UIKit/UIKit.h>
+#import <AdSupport/AdSupport.h>
 
-// OFFSETS 1.120.9
-#define OFF_AIMBOT 0x43AF2C0 
-#define OFF_FOV 0x3FB13F0
+// --- GERADOR DE CONTAS INFINITAS (BYPASS DE IDFV) ---
+%hook UIDevice
+- (NSUUID *)identifierForVendor {
+    // Retorna um ID aleatório toda vez, resetando o Guest automaticamente
+    return [NSUUID UUID];
+}
+%end
 
 @interface KaduMenu : UIView
-@property (nonatomic, strong) UIView *pnlPreto;
-@property (nonatomic, strong) UIScrollView *rolagem;
-@property (nonatomic, strong) UISlider *barraFov;
+@property (nonatomic, strong) UIView *pnl;
 @property (nonatomic, strong) CAShapeLayer *fovCircle;
-@property (nonatomic, strong) UISwitch *swFov; 
-@property (nonatomic, strong) UISwitch *swEsp; // Adicionado para controle do ESP
+@property (nonatomic, strong) UISlider *slideFov;
+@property (nonatomic, strong) UISwitch *swFov;
 @end
 
 @implementation KaduMenu
-
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.pnlPreto = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
-        self.pnlPreto.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.95];
-        self.pnlPreto.layer.cornerRadius = 10;
-        self.pnlPreto.layer.borderWidth = 1.2;
-        self.pnlPreto.layer.borderColor = [UIColor whiteColor].CGColor;
-        self.pnlPreto.hidden = YES; 
-        [self addSubview:self.pnlPreto];
+        // Painel Principal
+        self.pnl = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 220, 350)];
+        self.pnl.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
+        self.pnl.layer.borderColor = [UIColor whiteColor].CGColor;
+        self.pnl.layer.borderWidth = 1.0;
+        self.pnl.hidden = YES;
+        [self addSubview:self.pnl];
 
-        self.rolagem = [[UIScrollView alloc] initWithFrame:self.pnlPreto.bounds];
-        self.rolagem.contentSize = CGSizeMake(220, 500);
-        [self.pnlPreto addSubview:self.rolagem];
+        // Layout (Cabeça, Peito, ESP, FOV)
+        CGFloat y = 20;
+        [self addL:@"AIMBOT" y:&y];
+        [self addL:@"ESP" y:&y];
+        
+        self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
+        [self.swFov addTarget:self action:@selector(toggleFov) forControlEvents:UIControlEventValueChanged];
+        [self.pnl addSubview:self.swFov];
+        y += 40;
 
-        [self montarLayoutKadu];
+        self.slideFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
+        self.slideFov.maximumValue = 250;
+        [self.slideFov addTarget:self action:@selector(drawFov) forControlEvents:UIControlEventValueChanged];
+        [self.pnl addSubview:self.slideFov];
+        y += 50;
 
+        [self addL:@"CABEÇA" y:&y];
+        [self addL:@"PEITO" y:&y];
+
+        // Botão de Limpeza e Fechamento
+        UIButton *btn = [UIButton buttonWithType:UIButtonTypeSystem];
+        btn.frame = CGRectMake(10, y, 200, 40);
+        [btn setTitle:@"BYPASS & RESET GUEST" forState:UIControlStateNormal];
+        [btn setBackgroundColor:[UIColor darkGrayColor]];
+        [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [btn addTarget:self action:@selector(cleanAndExit) forControlEvents:UIControlEventTouchUpInside];
+        [self.pnl addSubview:btn];
+
+        // Círculo do FOV
         self.fovCircle = [CAShapeLayer layer];
         self.fovCircle.strokeColor = [UIColor whiteColor].CGColor;
         self.fovCircle.fillColor = [UIColor clearColor].CGColor;
-        self.fovCircle.lineWidth = 0.8;
-        self.fovCircle.hidden = YES;
+        self.fovCircle.lineWidth = 1.0;
         [[UIApplication sharedApplication].keyWindow.layer addSublayer:self.fovCircle];
 
-        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(toggle)];
+        // Gesto 3 dedos
+        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(show)];
         t.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t];
-        
-        self.frame = CGRectMake(50, 150, 0, 0); 
-
-        // MONITOR DE FIM DE PARTIDA (Limpa o ESP ao sair)
-        [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(checkGameState) userInfo:nil repeats:YES];
     }
     return self;
 }
 
-- (void)montarLayoutKadu {
-    CGFloat y = 15;
-    [self addSw:@"AIMBOT" y:&y action:nil];
-    
-    // ESP com controle para sumir
-    UILabel *lE = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
-    lE.text = @"ESP"; lE.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:lE];
-    self.swEsp = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
-    [self.swEsp setOn:NO];
-    [self.rolagem addSubview:self.swEsp];
-    y += 45;
-    
-    UILabel *lF = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 140, 30)];
-    lF.text = @"ATIVAR FOV"; lF.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:lF];
-    self.swFov = [[UISwitch alloc] initWithFrame:CGRectMake(160, y, 50, 30)];
-    [self.swFov addTarget:self action:@selector(vFov) forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:self.swFov];
-    y += 45;
-
-    self.barraFov = [[UISlider alloc] initWithFrame:CGRectMake(10, y, 200, 30)];
-    self.barraFov.maximumValue = 280;
-    [self.barraFov addTarget:self action:@selector(dFov) forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:self.barraFov]; y += 50;
-
-    [self addSw:@"CABEÇA" y:&y action:nil];
-    [self addSw:@"PEITO" y:&y action:nil];
-
-    UIButton *bt = [UIButton buttonWithType:UIButtonTypeSystem];
-    bt.frame = CGRectMake(10, y, 200, 45);
-    [bt setTitle:@"BYPASS & FECHAR FF" forState:UIControlStateNormal];
-    [bt setBackgroundColor:[UIColor darkGrayColor]];
-    [bt setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [bt addTarget:self action:@selector(relog) forControlEvents:UIControlEventTouchUpInside];
-    [self.rolagem addSubview:bt];
-}
-
-// Lógica para o ESP sumir automaticamente
-- (void)checkGameState {
-    // Aqui simulamos a detecção de lobby. 
-    // Se o interruptor do ESP estiver ligado mas não houver inimigos (fim de partida), ele desliga.
-    if (self.swEsp.isOn) {
-        // Se quiseres que ele desligue forçadamente ao clicar no botão de Relog:
-        // [self.swEsp setOn:NO animated:YES];
-    }
-}
-
-- (void)vFov { self.fovCircle.hidden = !self.swFov.isOn; [self dFov]; }
-- (void)dFov {
-    if (!self.fovCircle.hidden) {
-        UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2) radius:self.barraFov.value startAngle:0 endAngle:M_PI*2 clockwise:YES];
-        self.fovCircle.path = p.CGPath;
-    }
-}
-
-- (void)relog {
-    [self.swEsp setOn:NO]; // Desliga o ESP antes de fechar
-    self.fovCircle.hidden = YES;
-    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-    [[NSFileManager defaultManager] removeItemAtPath:[path stringByAppendingPathComponent:@"guest.dat"] error:nil];
-    exit(0); 
-}
-
-- (void)toggle {
-    self.pnlPreto.hidden = !self.pnlPreto.hidden;
-    self.frame = self.pnlPreto.hidden ? CGRectMake(self.frame.origin.x, self.frame.origin.y, 0, 0) : CGRectMake(self.frame.origin.x, self.frame.origin.y, 220, 350);
-}
-
-- (void)addSw:(NSString *)t y:(CGFloat *)y action:(SEL)sel {
+- (void)addL:(NSString *)t y:(CGFloat *)y {
     UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, *y, 140, 30)];
     l.text = t; l.textColor = [UIColor whiteColor];
-    [self.rolagem addSubview:l];
+    [self.pnl addSubview:l];
     UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(160, *y, 50, 30)];
-    if(sel) [s addTarget:self action:sel forControlEvents:UIControlEventValueChanged];
-    [self.rolagem addSubview:s];
+    [self.pnl addSubview:s];
     *y += 45;
 }
+
+- (void)toggleFov { self.fovCircle.hidden = !self.swFov.isOn; [self drawFov]; }
+- (void)drawFov {
+    if (!self.fovCircle.hidden) {
+        CGPoint c = CGPointMake([UIScreen mainScreen].bounds.size.width/2, [UIScreen mainScreen].bounds.size.height/2);
+        self.fovCircle.path = [UIBezierPath bezierPathWithArcCenter:c radius:self.slideFov.value startAngle:0 endAngle:M_PI*2 clockwise:YES].CGPath;
+    }
+}
+
+- (void)cleanAndExit {
+    NSString *path = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    [[NSFileManager defaultManager] removeItemAtPath:[path stringByAppendingPathComponent:@"guest.dat"] error:nil];
+    exit(0);
+}
+
+- (void)show { self.pnl.hidden = !self.pnl.hidden; }
 @end
 
 static void __attribute__((constructor)) init() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 150, 220, 350)];
-        [w addSubview:m];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(30 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        KaduMenu *m = [[KaduMenu alloc] initWithFrame:CGRectMake(50, 100, 220, 350)];
+        [[UIApplication sharedApplication].keyWindow addSubview:m];
     });
 }
