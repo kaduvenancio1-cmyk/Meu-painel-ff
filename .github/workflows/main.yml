@@ -10,14 +10,15 @@ jobs:
 
       - name: Setup Theos
         run: |
-          sudo git clone --recursive https://github.com/theos/theos.git /opt/theos
-          curl -LO https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz
-          tar -xf iPhoneOS14.5.sdk.tar.xz -C /opt/theos/sdks
-          rm iPhoneOS14.5.sdk.tar.xz
-
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/sdks/master/install.sh)"
+          # Garante que o SDK certo está lá
+          git clone https://github.com/theos/sdks.git sdk_tmp
+          mkdir -p $THEOS/sdks
+          cp -r sdk_tmp/iPhoneOS14.5.sdk $THEOS/sdks/
+          
       - name: Build
         run: |
-          export THEOS=/opt/theos
+          export THEOS=~/theos
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
