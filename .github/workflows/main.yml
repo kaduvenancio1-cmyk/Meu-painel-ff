@@ -8,30 +8,34 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos
+      - name: Setup Theos (Absolute Clean)
         run: |
-          # Cria um nome de pasta que muda a cada build para evitar o erro 128
-          THEOS_ID="theos_$(date +%s)"
-          export THEOS_PATH="$RUNNER_TEMP/$THEOS_ID"
+          # Criamos uma pasta com ID único baseado na hora para NUNCA dar "already exists"
+          THEOS_ID="theos_build_$(date +%s)"
+          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
           
-          # Clona o motor Theos do zero
-          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
+          echo "Limpando qualquer rastro anterior..."
+          rm -rf $THEOS_DIR
           
-          # Clona os SDKs (Método lento mas seguro contra arquivos corrompidos)
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
+          echo "Instalando Theos em: $THEOS_DIR"
+          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
           
-          # Salva o caminho exato para o próximo passo
-          echo "THEOS_FINAL=$THEOS_PATH" >> $GITHUB_ENV
+          echo "Baixando SDKs de forma segura..."
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
+          
+          # Exporta para os próximos passos usarem
+          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
-          export THEOS=${{ env.THEOS_FINAL }}
+          export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # 'make clean' obriga o sistema a gerar um arquivo real e funcional
+          
+          # 'make clean' é obrigatório para não gerar arquivo de 700 bytes
           make clean package FINALPACKAGE=1
           
       - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Instalavel
+          name: Painel-Oficial-Funcional
           path: packages/*.deb
