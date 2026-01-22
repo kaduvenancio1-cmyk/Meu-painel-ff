@@ -5,31 +5,33 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
+      - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos
+      - name: Setup Theos Clean
         run: |
-          # Gera um nome de pasta único (ex: theos_123456)
-          UNIQUE_FOLDER="theos_$(date +%s)"
-          THEOS_PATH="$GITHUB_WORKSPACE/$UNIQUE_FOLDER"
+          # APAGA QUALQUER PASTA QUE POSSA TRAVAR O PROCESSO
+          rm -rf $GITHUB_WORKSPACE/theos_build
           
-          # Clona tudo nessa pasta virgem
-          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
+          # Clona o motor Theos em uma pasta limpa
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_build
           
-          # Passa o caminho para o próximo passo
-          echo "THEOS_FINAL=$THEOS_PATH" >> $GITHUB_ENV
+          # Baixa os SDKs direto para dentro da pasta correta
+          # Se o git clone falhar, ele nem tenta o próximo passo
+          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_build/sdks
+          
+          # Registra o caminho exato para o build
+          echo "THEOS=$GITHUB_WORKSPACE/theos_build" >> $GITHUB_ENV
 
-      - name: Build
+      - name: Build Package
         run: |
-          export THEOS=${{ env.THEOS_FINAL }}
+          export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # Compila o arquivo real (30KB+)
-          make package FINALPACKAGE=1
+          # O comando 'clean' garante que ele não use o lixo do build de 700 bytes
+          make clean package FINALPACKAGE=1
           
-      - name: Upload
+      - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Sem-Erro
+          name: Painel-Funcional-FF
           path: packages/*.deb
