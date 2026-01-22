@@ -10,15 +10,17 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Instala o Theos na pasta do usuário (evita erro de permissão)
+          # Limpa qualquer tentativa anterior e instala do zero na pasta do usuário
+          rm -rf ~/theos
           git clone --recursive https://github.com/theos/theos.git ~/theos
-          # Baixa o SDK direto para a pasta certa
+          # Baixa os SDKs direto para o lugar certo
           git clone https://github.com/theos/sdks.git ~/theos/sdks
           
       - name: Build
         run: |
           export THEOS=~/theos
-          # Manda o comando de compilação
+          # Garante que as permissões de execução estão ok
+          chmod +x $THEOS/bin/*
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
