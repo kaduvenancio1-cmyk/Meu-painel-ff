@@ -10,19 +10,18 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Mata qualquer pasta antiga para não dar erro de "already exists"
-          rm -rf $HOME/theos
-          # Instala o motor do zero na pasta do usuário
+          # O segredo: apaga qualquer rastro de pastas antigas
+          sudo rm -rf $HOME/theos
+          # Instala do zero de forma limpa
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          # Baixa os SDKs oficiais para a pasta correta
           git clone https://github.com/theos/sdks.git $HOME/theos/sdks
           
       - name: Build
         run: |
           export THEOS=$HOME/theos
-          # Dá permissão total aos scripts do motor
+          # Dá permissão total para os arquivos
           chmod -R +x $THEOS/bin
-          # Compila o arquivo final
+          # Compila o seu painel
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
