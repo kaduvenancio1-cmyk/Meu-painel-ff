@@ -10,17 +10,19 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Limpa qualquer tentativa anterior e instala do zero na pasta do usuário
+          # Remove lixo de tentativas anteriores para evitar o erro fatal
           rm -rf ~/theos
+          # Instala o motor na pasta do usuário (sem erro de permissão)
           git clone --recursive https://github.com/theos/theos.git ~/theos
-          # Baixa os SDKs direto para o lugar certo
+          # Baixa os SDKs oficiais
           git clone https://github.com/theos/sdks.git ~/theos/sdks
           
       - name: Build
         run: |
           export THEOS=~/theos
-          # Garante que as permissões de execução estão ok
+          # Dá permissão aos binários do motor
           chmod +x $THEOS/bin/*
+          # Compila o pacote final
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
