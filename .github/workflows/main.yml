@@ -10,16 +10,16 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # O segredo: apaga qualquer rastro de pastas antigas
-          sudo rm -rf $HOME/theos
-          # Instala do zero de forma limpa
+          # APAGA TUDO para não dar erro de "already exists"
+          rm -rf $HOME/theos
+          # Instala do zero de forma limpa na pasta do usuário
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           git clone https://github.com/theos/sdks.git $HOME/theos/sdks
           
       - name: Build
         run: |
           export THEOS=$HOME/theos
-          # Dá permissão total para os arquivos
+          # Dá permissão total para os scripts do motor
           chmod -R +x $THEOS/bin
           # Compila o seu painel
           make package FINALPACKAGE=1
