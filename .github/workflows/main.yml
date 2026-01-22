@@ -10,26 +10,23 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Usando o diretório temporário do sistema para fugir do bloqueio de pasta
-          export THEOS_TMP=$RUNNER_TEMP/theos
-          rm -rf $THEOS_TMP
+          # Define o local temporário
+          export THEOS_DEST=$RUNNER_TEMP/theos
           
-          # Clonando o motor e os SDKs em um lugar que o GitHub limpa toda hora
-          git clone --recursive https://github.com/theos/theos.git $THEOS_TMP
+          # Clona o motor Theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS_DEST
           
-          # Forçando o download do SDK para dentro da pasta correta
-          mkdir -p $THEOS_TMP/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_TMP/sdks/sdk.tar.xz
-          tar -xf $THEOS_TMP/sdks/sdk.tar.xz -C $THEOS_TMP/sdks/
+          # CLONA os SDKs (Dura mais, mas não corrompe como o tar)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DEST/sdks
           
-          # Passando o caminho para o próximo passo
-          echo "THEOS=$THEOS_TMP" >> $GITHUB_ENV
+          # Salva o caminho para o próximo passo
+          echo "THEOS=$THEOS_DEST" >> $GITHUB_ENV
           
       - name: Build
         run: |
-          # Usa a variável que criamos acima
-          chmod -R +x ${{ env.THEOS }}/bin
           export THEOS=${{ env.THEOS }}
+          chmod -R +x $THEOS/bin
+          # Compila o painel
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
