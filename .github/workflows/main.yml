@@ -5,32 +5,28 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
+      - name: Checkout Project
         uses: actions/checkout@v4
 
       - name: Setup Theos
         run: |
-          # APAGA QUALQUER PASTA ANTIGA ANTES DE COMEÇAR
-          rm -rf ./theos_viva
-          
-          # Clona o motor em uma pasta com nome totalmente novo
-          git clone --recursive https://github.com/theos/theos.git ./theos_viva
-          
-          # Limpa a pasta de SDKs interna e baixa o conteúdo de novo
-          rm -rf ./theos_viva/sdks
-          git clone --depth 1 https://github.com/theos/sdks.git ./theos_viva/sdks
-          
-          # Avisa o sistema o local exato
-          echo "THEOS=$GITHUB_WORKSPACE/theos_viva" >> $GITHUB_ENV
+          # Limpeza garantida
+          rm -rf $GITHUB_WORKSPACE/theos
+          # Clone oficial do motor
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos
+          # Clone oficial dos SDKs
+          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos/sdks
 
-      - name: Build
+      - name: Build Package
         run: |
-          export THEOS=${{ env.THEOS }}
+          # Define a variável que o comando 'make' precisa
+          export THEOS=$GITHUB_WORKSPACE/theos
           chmod -R +x $THEOS/bin
+          # O comando principal para gerar o arquivo real
           make package FINALPACKAGE=1
           
-      - name: Upload Artifact
+      - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Pronto
+          name: Painel-Verdadeiro
           path: packages/*.deb
