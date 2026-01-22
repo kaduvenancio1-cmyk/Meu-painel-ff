@@ -5,33 +5,34 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout Project
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Theos Clean
+      - name: Setup Theos
         run: |
-          # APAGA QUALQUER PASTA QUE POSSA TRAVAR O PROCESSO
-          rm -rf $GITHUB_WORKSPACE/theos_build
+          # Criamos um local temporário que o GitHub limpa a cada segundo
+          export THEOS_TMP=$RUNNER_TEMP/theos_final
+          rm -rf $THEOS_TMP
           
-          # Clona o motor Theos em uma pasta limpa
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_build
+          # Baixa apenas o motor essencial (sem subfolders que dão erro)
+          git clone --recursive https://github.com/theos/theos.git $THEOS_TMP
           
-          # Baixa os SDKs direto para dentro da pasta correta
-          # Se o git clone falhar, ele nem tenta o próximo passo
-          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_build/sdks
+          # Em vez de 'git clone', usamos download direto para pular o erro 128
+          mkdir -p $THEOS_TMP/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_TMP/sdks/sdk.tar.xz
+          tar -xf $THEOS_TMP/sdks/sdk.tar.xz -C $THEOS_TMP/sdks/
           
-          # Registra o caminho exato para o build
-          echo "THEOS=$GITHUB_WORKSPACE/theos_build" >> $GITHUB_ENV
+          echo "THEOS=$THEOS_TMP" >> $GITHUB_ENV
 
-      - name: Build Package
+      - name: Build
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # O comando 'clean' garante que ele não use o lixo do build de 700 bytes
+          # O comando 'clean' limpa aquele rastro de 700 bytes
           make clean package FINALPACKAGE=1
           
-      - name: Upload Finished DEB
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Funcional-FF
+          name: Painel-Oficial
           path: packages/*.deb
