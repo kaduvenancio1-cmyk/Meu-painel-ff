@@ -1,6 +1,6 @@
 /*
- * RICKZZ.XZ x GEMINI - SUPREMACIA X1 FINAL
- * DESIGN: GRAFITE NEON | TARGET: DINÂMICO
+ * RICKZZ.XZ x GEMINI - SUPREMACIA FINAL
+ * DESIGN: GRAFITE NEON | BOLINHA DINÂMICA
  */
 
 #import <UIKit/UIKit.h>
@@ -18,7 +18,6 @@ static bool no_recoil = true;
 @property (nonatomic, strong) UIView *container;
 @property (nonatomic, strong) UIView *tabContent;
 @property (nonatomic, strong) UIView *dot; 
-// Declarando métodos para evitar erro de seletor
 - (void)drawCombate;
 - (void)drawSistema;
 @end
@@ -55,15 +54,16 @@ static bool isOpen = false;
     if (self) {
         self.backgroundColor = [UIColor clearColor];
 
+        // FUNDO CINZA GRAFITE
         _container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 360, 430)];
         _container.center = self.center;
         _container.backgroundColor = [UIColor colorWithRed:0.15 green:0.15 blue:0.15 alpha:1.0];
         _container.layer.cornerRadius = 30;
         _container.layer.borderWidth = 3;
-        _container.layer.borderColor = [UIColor greenColor].CGColor;
+        _container.layer.borderColor = [UIColor greenColor].CGColor; // BORDA NEON
         [self addSubview:_container];
 
-        // ABAS ESTILO CANVA
+        // ABAS SUPERIORES
         UIButton *cTab = [self tabBtn:@"Combate" x:20 tag:0];
         UIButton *sTab = [self tabBtn:@"Sistema" x:110 tag:1];
         [_container addSubview:cTab]; [_container addSubview:sTab];
@@ -94,11 +94,10 @@ static bool isOpen = false;
 }
 
 - (void)drawCombate {
-    // Checkboxes
     [self addCheck:@"Aimbot" y:10 var:&aimbot_on];
     [self addCheck:@"No Recoil" y:45 var:&no_recoil];
 
-    // Boneco Alok (Transparente)
+    // BONECO ALOK SEM FUNDO
     UIView *alok = [[UIView alloc] initWithFrame:CGRectMake(220, 10, 80, 140)];
     alok.backgroundColor = [UIColor clearColor];
     [_tabContent addSubview:alok];
@@ -107,19 +106,19 @@ static bool isOpen = false;
     body.backgroundColor = [UIColor darkGrayColor];
     [alok addSubview:body];
 
+    // BOLINHA VERMELHA (TARGET)
     _dot = [[UIView alloc] initWithFrame:CGRectMake(35, 10, 10, 10)];
     _dot.backgroundColor = [UIColor redColor];
     _dot.layer.cornerRadius = 5;
     [alok addSubview:_dot];
 
-    // Seleção de Target
     [self addTargetBtn:@"Cabeça" y:160 tag:0];
     [self addTargetBtn:@"Peito" y:190 tag:1];
 }
 
 - (void)drawSistema {
     UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(20, 20, 200, 30)];
-    l.text = @"Modo Streamer: ON";
+    l.text = @"Modo Streamer Ativo";
     l.textColor = [UIColor whiteColor];
     [_tabContent addSubview:l];
 }
@@ -135,10 +134,12 @@ static bool isOpen = false;
 - (void)setAim:(UIButton *)s {
     aim_target = (int)s.tag;
     [UIView animateWithDuration:0.2 animations:^{
+        // Move a bolinha conforme a seleção
         _dot.frame = (aim_target == 0) ? CGRectMake(35, 10, 10, 10) : CGRectMake(35, 50, 10, 10);
     }];
 }
 
+// CORREÇÃO FINAL PARA O ERRO DE PONTEIRO
 - (void)addCheck:(NSString *)t y:(int)y var:(bool *)v {
     UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(20, y, 100, 25)];
     l.text = t; l.textColor = [UIColor whiteColor];
@@ -148,13 +149,17 @@ static bool isOpen = false;
     c.layer.borderWidth = 2; c.layer.borderColor = [UIColor greenColor].CGColor;
     if (*v) c.backgroundColor = [UIColor greenColor];
     
-    objc_set_associated_object(c, "v_ptr", [NSValue valueWithPointer:v], OBJC_ASSOCIATION_RETAIN);
+    // Armazena o endereço de forma segura para o compilador
+    c.accessibilityValue = [NSString stringWithFormat:@"%p", v];
     [c addTarget:self action:@selector(toggle:) forControlEvents:UIControlEventTouchUpInside];
     [_tabContent addSubview:c];
 }
 
 - (void)toggle:(UIButton *)s {
-    bool *v = (bool *)[[objc_get_associated_object(s, "v_ptr") pointerValue] pointerValue];
+    unsigned long long addr = 0;
+    NSScanner *scanner = [NSScanner scannerWithString:s.accessibilityValue];
+    [scanner scanHexLongLong:&addr];
+    bool *v = (bool *)addr;
     *v = !(*v);
     s.backgroundColor = (*v) ? [UIColor greenColor] : [UIColor clearColor];
 }
