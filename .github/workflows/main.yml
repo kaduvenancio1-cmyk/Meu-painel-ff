@@ -10,15 +10,15 @@ jobs:
 
       - name: Setup Theos
         run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/sdks/master/install.sh)"
-          # Garante que o SDK certo está lá
-          git clone https://github.com/theos/sdks.git sdk_tmp
-          mkdir -p $THEOS/sdks
-          cp -r sdk_tmp/iPhoneOS14.5.sdk $THEOS/sdks/
+          # Instala o Theos na pasta do usuário (evita erro de permissão)
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          # Baixa o SDK direto para a pasta certa
+          git clone https://github.com/theos/sdks.git ~/theos/sdks
           
       - name: Build
         run: |
           export THEOS=~/theos
+          # Manda o comando de compilação
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
