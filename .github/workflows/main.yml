@@ -10,25 +10,29 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # APAGA QUALQUER PASTA ANTIGA ANTES DE COMEÇAR (Resolve o Erro 128)
-          rm -rf $GITHUB_WORKSPACE/theos_power
+          # APAGA QUALQUER PASTA ANTIGA (Resolve o Erro 128 das suas fotos)
+          rm -rf $GITHUB_WORKSPACE/theos_final
           
-          # Instalação limpa em um novo local dentro do projeto
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_power
-          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_power/sdks
+          # Instalação limpa dentro da pasta do projeto
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_final
           
-          # Salva o caminho para o compilador achar
-          echo "THEOS=$GITHUB_WORKSPACE/theos_power" >> $GITHUB_ENV
+          # Baixa os SDKs de forma segura
+          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_final/sdks
+          
+          # Salva o caminho para o compilador não se perder
+          echo "THEOS=$GITHUB_WORKSPACE/theos_final" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
+          # Usa a variável que salvamos acima
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # Força a compilação total para não vir vazio (700 bytes)
+          
+          # COMPILAÇÃO REAL (Isso vai fazer o arquivo ter mais de 30KB)
           make package FINALPACKAGE=1
           
-      - name: Upload Artifact
+      - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Verdadeiro
+          name: Painel-Real-FF
           path: packages/*.deb
