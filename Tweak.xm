@@ -1,13 +1,12 @@
 /*
- * RICKZZ.XZ x GEMINI - VERSÃO COMPLETA ANTI-CRASH
- * DESIGN: CANVA RETANGULAR | TUDO DESATIVADO AO INICIAR
+ * RICKZZ.XZ x GEMINI - VERSÃO DA VINGANÇA
+ * TUDO PRONTO PARA O USO | SEM CRASH NO LOBBY
  */
 
 #import <UIKit/UIKit.h>
 #include <substrate.h>
 #include <mach-o/dyld.h>
 
-// --- VARIÁVEIS DE CONTROLE ---
 static bool aim = false, recoil = false, esp = false, fov_atv = false;
 static bool tracer = false, skeleton = false, box2d = false, dist = false;
 static bool l_cache = false, t_lache = false, a_report = false, byp_on = false;
@@ -25,8 +24,7 @@ static int aim_tgt = 0;
 static RickzzFinalMenu *inst;
 
 + (void)load {
-    // Delay de 15 segundos para passar a logo da Garena e carregar o Lobby
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(show)];
         t.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t];
@@ -44,14 +42,12 @@ static RickzzFinalMenu *inst;
     self = [super initWithFrame:frame];
     if (self) {
         self.backgroundColor = [UIColor clearColor];
-        
-        // PAINEL RETANGULAR ESTILO CANVA
         _bg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 560, 320)];
         _bg.center = self.center;
-        _bg.backgroundColor = [UIColor colorWithRed:0.12 green:0.12 blue:0.12 alpha:0.98];
+        _bg.backgroundColor = [UIColor colorWithRed:0.05 green:0.05 blue:0.05 alpha:0.98];
         _bg.layer.cornerRadius = 15;
         _bg.layer.borderColor = [UIColor greenColor].CGColor;
-        _bg.layer.borderWidth = 2.5;
+        _bg.layer.borderWidth = 2.0;
         [self addSubview:_bg];
 
         [self tabBtn:@"Combate" x:30 tag:0];
@@ -69,6 +65,7 @@ static RickzzFinalMenu *inst;
     b.backgroundColor = [UIColor colorWithWhite:0.2 alpha:1.0];
     b.layer.cornerRadius = 15; b.tag = tg;
     [b setTitle:t forState:UIControlStateNormal];
+    b.titleLabel.font = [UIFont boldSystemFontOfSize:12];
     [b addTarget:self action:@selector(swTab:) forControlEvents:UIControlEventTouchUpInside];
     [_bg addSubview:b];
 }
@@ -79,13 +76,6 @@ static RickzzFinalMenu *inst;
 }
 
 - (void)drawCombate {
-    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 540, 25)];
-    title.text = @"Rickzz.xz x Gemini ●";
-    title.textColor = [UIColor whiteColor];
-    title.textAlignment = NSTextAlignmentCenter;
-    [_content addSubview:title];
-
-    // COLUNA 1
     [self ck:@"Aimbot" x:25 y:40 var:&aim];
     [self ck:@"No Recoil" x:25 y:75 var:&recoil];
     [self ck:@"ESP" x:25 y:110 var:&esp];
@@ -96,20 +86,18 @@ static RickzzFinalMenu *inst;
     _fovLab.textColor = [UIColor whiteColor]; _fovLab.font = [UIFont systemFontOfSize:11];
     [_content addSubview:_fovLab];
     
-    UISlider *s = [[UISlider alloc] initWithFrame:CGRectMake(25, 200, 140, 20)];
-    s.maximumValue = 180; s.value = fov_val;
-    [s addTarget:self action:@selector(fvCh:) forControlEvents:UIControlEventValueChanged];
-    [_content addSubview:s];
+    UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(25, 200, 140, 20)];
+    sl.maximumValue = 180; sl.value = fov_val;
+    [sl addTarget:self action:@selector(fvCh:) forControlEvents:UIControlEventValueChanged];
+    [_content addSubview:sl];
 
-    // COLUNA 2
     [self ck:@"Tracer" x:200 y:40 var:&tracer];
     [self ck:@"Skeleton" x:200 y:75 var:&skeleton];
     [self ck:@"Caixa 2D" x:200 y:110 var:&box2d];
     [self ck:@"Distância" x:200 y:145 var:&dist];
 
-    // COLUNA 3 - ALOK
     UIView *al = [[UIView alloc] initWithFrame:CGRectMake(400, 40, 75, 120)];
-    al.backgroundColor = [UIColor colorWithWhite:0.3 alpha:0.3]; al.layer.cornerRadius = 10;
+    al.backgroundColor = [UIColor colorWithWhite:0.15 alpha:0.8]; al.layer.cornerRadius = 10;
     [_content addSubview:al];
     _alokDot = [[UIView alloc] initWithFrame:CGRectMake(32, 15, 10, 10)];
     _alokDot.backgroundColor = [UIColor redColor]; _alokDot.layer.cornerRadius = 5;
@@ -164,7 +152,7 @@ static RickzzFinalMenu *inst;
 }
 @end
 
-// --- HOOKS DE MEMÓRIA (CHAMADOS COM SEGURANÇA) ---
+// --- HOOKS DE MEMÓRIA PROTEGIDOS ---
 void (*old_S)(void *i);
 void new_S(void *i) {
     if (i != NULL && byp_on) {
@@ -176,7 +164,6 @@ void new_S(void *i) {
 
 __attribute__((constructor))
 static void init() {
-    // Injeta o Hook principal com 10 segundos de delay
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         MSHookFunction((void *)(_dyld_get_image_vmaddr_slide(0) + 0x103D8E124), (void *)new_S, (void **)&old_S);
     });
