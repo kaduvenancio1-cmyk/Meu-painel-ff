@@ -1,19 +1,19 @@
 /*
- * RICKZZ.XZ x GEMINI - SUPREMACIA X1 (FINAL BUILD)
+ * RICKZZ.XZ x GEMINI - SUPREMACIA X1
  * -----------------------------------------
- * DESIGN: CANVA STYLE | GESTURE: 3 FINGERS
+ * VERSÃO: CANVA STYLE | GESTURE: 3 FINGERS
  */
 
 #import <UIKit/UIKit.h>
 #include <substrate.h>
 #include <mach-o/dyld.h>
 
-// --- VARIÁVEIS DE CONTROLE (CONECTADAS AOS SLIDERS) ---
-static bool aimbot_on = true;
-static float aim_fov = 12.0f;
-static float aim_smooth = 4.5f;
-static bool no_recoil = true;
-static bool anti_report = true;
+// --- VARIÁVEIS COM ATRIBUTO PARA NÃO DAR ERRO DE 'UNUSED' ---
+static __attribute__((unused)) bool aimbot_on = true;
+static __attribute__((unused)) float aim_fov = 12.0f;
+static __attribute__((unused)) float aim_smooth = 4.5f;
+static __attribute__((unused)) bool no_recoil = true;
+static __attribute__((unused)) bool anti_report = true;
 
 @interface RickzzMenu : UIView
 @property (nonatomic, strong) UIView *panel;
@@ -31,6 +31,14 @@ static bool isVisible = false;
         UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
         tap.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:tap];
+        
+        // Alerta de sucesso (O que você já viu)
+        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"RICKZZ.XZ x GEMINI" 
+                                    message:@"PAINEL INJETADO!\n3 Dedos para abrir o Canva." 
+                                    preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"BORA PRO X1" style:UIAlertActionStyleDefault handler:nil]];
+        [window.rootViewController presentViewController:alert animated:YES completion:nil];
     });
 }
 
@@ -55,59 +63,64 @@ static bool isVisible = false;
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.3];
+        self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4];
         
-        // CONTAINER (DESIGN DO CANVA)
-        _panel = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 240)];
+        // PAINEL ESTILO CANVA
+        _panel = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 260)];
         _panel.center = self.center;
-        _panel.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.12 alpha:0.95];
-        _panel.layer.cornerRadius = 15;
+        _panel.backgroundColor = [UIColor colorWithRed:0.08 green:0.08 blue:0.10 alpha:0.98];
+        _panel.layer.cornerRadius = 20;
         _panel.layer.borderColor = [UIColor greenColor].CGColor;
-        _panel.layer.borderWidth = 1.5;
+        _panel.layer.borderWidth = 2.0;
         [self addSubview:_panel];
 
-        // ÁREA DE CONTEÚDO (ABAS)
-        _contentArea = [[UIView alloc] initWithFrame:CGRectMake(10, 50, 300, 180)];
-        [_panel addSubview:_contentArea];
-
-        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, 320, 30)];
-        title.text = @"RICKZZ.XZ x GEMINI";
+        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, 320, 30)];
+        title.text = @"RICKZZ.XZ - CANVA MENU";
         title.textColor = [UIColor greenColor];
         title.textAlignment = NSTextAlignmentCenter;
         title.font = [UIFont boldSystemFontOfSize:18];
         [_panel addSubview:title];
 
-        [self loadCombatTab];
+        _contentArea = [[UIView alloc] initWithFrame:CGRectMake(10, 50, 300, 200)];
+        [_panel addSubview:_contentArea];
+
+        [self loadControls];
     }
     return self;
 }
 
-- (void)loadCombatTab {
-    // BOTÃO PARA FECHAR NO CANTO
-    UIButton *close = [UIButton buttonWithType:UIButtonTypeCustom];
-    close.frame = CGRectMake(280, 5, 30, 30);
-    [close setTitle:@"X" forState:UIControlStateNormal];
-    [close setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
-    [close addTarget:[RickzzMenu class] action:@selector(hide) forControlEvents:UIControlEventTouchUpInside];
-    [_panel addSubview:close];
+- (void)loadControls {
+    // SLIDER FOV (Conectado à variável)
+    UILabel *fLab = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 280, 20)];
+    fLab.text = [NSString stringWithFormat:@"AIM FOV: %.1f", aim_fov];
+    fLab.textColor = [UIColor whiteColor];
+    [_contentArea addSubview:fLab];
 
-    // SLIDER FOV
-    UILabel *fovLab = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 280, 20)];
-    fovLab.text = [NSString stringWithFormat:@"AIM FOV: %.1f", aim_fov];
-    fovLab.textColor = [UIColor whiteColor];
-    [_contentArea addSubview:fovLab];
-
-    UISlider *fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(10, 35, 280, 20)];
-    fovSlider.minimumValue = 1.0; fovSlider.maximumValue = 180.0; fovSlider.value = aim_fov;
-    [fovSlider addTarget:self action:@selector(fovChanged:) forControlEvents:UIControlEventValueChanged];
-    [_contentArea addSubview:fovSlider];
+    UISlider *fSlide = [[UISlider alloc] initWithFrame:CGRectMake(10, 35, 280, 20)];
+    fSlide.minimumValue = 1.0; fSlide.maximumValue = 180.0; fSlide.value = aim_fov;
+    fSlide.minimumTrackTintColor = [UIColor greenColor];
+    [fSlide addTarget:self action:@selector(fovCh:label:) forControlEvents:UIControlEventValueChanged];
+    [_contentArea addSubview:fSlide];
+    
+    // SWITCH NO RECOIL
+    UILabel *rLab = [[UILabel alloc] initWithFrame:CGRectMake(10, 80, 200, 30)];
+    rLab.text = @"NO RECOIL (Bala Reta)";
+    rLab.textColor = [UIColor whiteColor];
+    [_contentArea addSubview:rLab];
+    
+    UISwitch *rSw = [[UISwitch alloc] initWithFrame:CGRectMake(230, 80, 0, 0)];
+    rSw.on = no_recoil;
+    rSw.onTintColor = [UIColor greenColor];
+    [rSw addTarget:self action:@selector(recSw:) forControlEvents:UIControlEventValueChanged];
+    [_contentArea addSubview:rSw];
 }
 
-- (void)fovChanged:(UISlider *)sender { aim_fov = sender.value; }
+- (void)fovCh:(UISlider *)s label:(UILabel *)l { aim_fov = s.value; }
+- (void)recSw:(UISwitch *)s { no_recoil = s.on; }
 
 @end
 
-// --- HOOKS DE MEMÓRIA (A MÁGICA DO X1) ---
+// --- HOOKS DE MEMÓRIA ---
 void (*old_WeaponSpread)(void *instance);
 void new_WeaponSpread(void *instance) {
     if (no_recoil) {
@@ -118,9 +131,6 @@ void new_WeaponSpread(void *instance) {
 
 __attribute__((constructor))
 static void init() {
-    // Aplica Hooks com o Offset do Recoil
     MSHookFunction((void *)(_dyld_get_image_vmaddr_slide(0) + 0x103D8E124), (void *)new_WeaponSpread, (void **)&old_WeaponSpread);
-    
-    // Inicia o Gesto de 3 Dedos
     [RickzzMenu setup];
 }
