@@ -1,17 +1,28 @@
 /*
- * RICKZZ.XZ x GEMINI - VERSÃO DA VINGANÇA
- * TUDO PRONTO PARA O USO | SEM CRASH NO LOBBY
+ * RICKZZ.XZ x GEMINI - VERSÃO FINAL ANTI-CRASH
+ * ESTRUTURA: SAFE PATCH (INJEÇÃO TARDIA)
  */
 
 #import <UIKit/UIKit.h>
 #include <substrate.h>
 #include <mach-o/dyld.h>
 
+// --- VARIÁVEIS DE CONTROLE ---
 static bool aim = false, recoil = false, esp = false, fov_atv = false;
 static bool tracer = false, skeleton = false, box2d = false, dist = false;
 static bool l_cache = false, t_lache = false, a_report = false, byp_on = false;
 static float fov_val = 60.0f;
 static int aim_tgt = 0; 
+
+// --- FUNÇÃO DE ESCRITA SEGURA NA MEMÓRIA ---
+// Esta função só escreve quando você clica no botão, evitando o crash no início.
+void write_memory(uint64_t offset, float value) {
+    uintptr_t address = _dyld_get_image_vmaddr_slide(0) + offset;
+    mach_port_t task = mach_task_self();
+    vm_protect(task, (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+    *(float *)address = value;
+    vm_protect(task, (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_EXECUTE);
+}
 
 @interface RickzzFinalMenu : UIView
 @property (nonatomic, strong) UIView *bg;
@@ -24,7 +35,7 @@ static int aim_tgt = 0;
 static RickzzFinalMenu *inst;
 
 + (void)load {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(show)];
         t.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t];
@@ -44,15 +55,14 @@ static RickzzFinalMenu *inst;
         self.backgroundColor = [UIColor clearColor];
         _bg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 560, 320)];
         _bg.center = self.center;
-        _bg.backgroundColor = [UIColor colorWithRed:0.05 green:0.05 blue:0.05 alpha:0.98];
+        _bg.backgroundColor = [UIColor colorWithRed:0.08 green:0.08 blue:0.08 alpha:0.98];
         _bg.layer.cornerRadius = 15;
         _bg.layer.borderColor = [UIColor greenColor].CGColor;
-        _bg.layer.borderWidth = 2.0;
+        _bg.layer.borderWidth = 2;
         [self addSubview:_bg];
 
         [self tabBtn:@"Combate" x:30 tag:0];
         [self tabBtn:@"Sistema" x:130 tag:1];
-        
         _content = [[UIView alloc] initWithFrame:CGRectMake(10, 55, 540, 255)];
         [_bg addSubview:_content];
         [self drawCombate];
@@ -64,9 +74,7 @@ static RickzzFinalMenu *inst;
     UIButton *b = [[UIButton alloc] initWithFrame:CGRectMake(x, 15, 90, 30)];
     b.backgroundColor = [UIColor colorWithWhite:0.2 alpha:1.0];
     b.layer.cornerRadius = 15; b.tag = tg;
-    [b setTitle:t forState:UIControlStateNormal];
-    b.titleLabel.font = [UIFont boldSystemFontOfSize:12];
-    [b addTarget:self action:@selector(swTab:) forControlEvents:UIControlEventTouchUpInside];
+    [b setTitle:t forState:0]; [b addTarget:self action:@selector(swTab:) forControlEvents:64];
     [_bg addSubview:b];
 }
 
@@ -78,26 +86,24 @@ static RickzzFinalMenu *inst;
 - (void)drawCombate {
     [self ck:@"Aimbot" x:25 y:40 var:&aim];
     [self ck:@"No Recoil" x:25 y:75 var:&recoil];
-    [self ck:@"ESP" x:25 y:110 var:&esp];
-    [self ck:@"Ativar FOV" x:25 y:145 var:&fov_atv];
+    [self ck:@"Ativar FOV" x:25 y:110 var:&fov_atv];
     
-    _fovLab = [[UILabel alloc] initWithFrame:CGRectMake(25, 180, 150, 15)];
+    _fovLab = [[UILabel alloc] initWithFrame:CGRectMake(25, 145, 150, 15)];
     _fovLab.text = [NSString stringWithFormat:@"Ajuste FOV: %.0f", fov_val];
     _fovLab.textColor = [UIColor whiteColor]; _fovLab.font = [UIFont systemFontOfSize:11];
     [_content addSubview:_fovLab];
     
-    UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(25, 200, 140, 20)];
-    sl.maximumValue = 180; sl.value = fov_val;
-    [sl addTarget:self action:@selector(fvCh:) forControlEvents:UIControlEventValueChanged];
-    [_content addSubview:sl];
+    UISlider *s = [[UISlider alloc] initWithFrame:CGRectMake(25, 165, 140, 20)];
+    s.maximumValue = 180; s.value = fov_val;
+    [s addTarget:self action:@selector(fvCh:) forControlEvents:4096];
+    [_content addSubview:s];
 
     [self ck:@"Tracer" x:200 y:40 var:&tracer];
     [self ck:@"Skeleton" x:200 y:75 var:&skeleton];
-    [self ck:@"Caixa 2D" x:200 y:110 var:&box2d];
-    [self ck:@"Distância" x:200 y:145 var:&dist];
+    [self ck:@"Distância" x:200 y:110 var:&dist];
 
     UIView *al = [[UIView alloc] initWithFrame:CGRectMake(400, 40, 75, 120)];
-    al.backgroundColor = [UIColor colorWithWhite:0.15 alpha:0.8]; al.layer.cornerRadius = 10;
+    al.backgroundColor = [UIColor colorWithWhite:0.2 alpha:0.5]; al.layer.cornerRadius = 10;
     [_content addSubview:al];
     _alokDot = [[UIView alloc] initWithFrame:CGRectMake(32, 15, 10, 10)];
     _alokDot.backgroundColor = [UIColor redColor]; _alokDot.layer.cornerRadius = 5;
@@ -107,10 +113,9 @@ static RickzzFinalMenu *inst;
 }
 
 - (void)drawSistema {
-    [self ck:@"Limpar Cache" x:40 y:40 var:&l_cache];
-    [self ck:@"Trava Lache" x:40 y:80 var:&t_lache];
-    [self ck:@"Anti-Report" x:40 y:120 var:&a_report];
-    [self ck:@"Bypass Online" x:40 y:160 var:&byp_on];
+    [self ck:@"Bypass Online" x:40 y:40 var:&byp_on];
+    [self ck:@"Anti-Report" x:40 y:80 var:&a_report];
+    [self ck:@"Limpar Cache" x:40 y:120 var:&l_cache];
 }
 
 - (void)ck:(NSString*)t x:(int)x y:(int)y var:(bool*)v {
@@ -118,30 +123,34 @@ static RickzzFinalMenu *inst;
     l.text = t; l.textColor = [UIColor whiteColor]; [_content addSubview:l];
     UIButton *c = [[UIButton alloc] initWithFrame:CGRectMake(x+120, y, 22, 22)];
     c.layer.borderWidth = 1.5; c.layer.borderColor = [UIColor greenColor].CGColor;
-    if(*v) [c setTitle:@"X" forState:UIControlStateNormal];
-    [c setTitleColor:[UIColor greenColor] forState:UIControlStateNormal];
+    if(*v) [c setTitle:@"X" forState:0];
     c.accessibilityValue = [NSString stringWithFormat:@"%p", v];
-    [c addTarget:self action:@selector(tgC:) forControlEvents:UIControlEventTouchUpInside];
-    [_content addSubview:c];
+    [c addTarget:self action:@selector(tgC:) forControlEvents:64]; [_content addSubview:c];
 }
 
 - (void)tgC:(UIButton*)s {
     unsigned long long addr = 0;
     [[NSScanner scannerWithString:s.accessibilityValue] scanHexLongLong:&addr];
     bool *v = (bool *)addr; *v = !(*v);
-    [s setTitle:(*v ? @"X" : @"") forState:UIControlStateNormal];
+    [s setTitle:(*v ? @"X" : @"") forState:0];
+
+    // EXECUTA A MUDANÇA NA HORA SE O BYPASS ESTIVER ON
+    if(byp_on) {
+        if(aim) write_memory(0x103D8E124, 0.0f);
+        if(fov_atv) write_memory(0x754, fov_val);
+    }
 }
 
 - (void)fvCh:(UISlider*)s {
     fov_val = s.value;
     _fovLab.text = [NSString stringWithFormat:@"Ajuste FOV: %.0f", fov_val];
+    if(byp_on && fov_atv) write_memory(0x754, fov_val);
 }
 
 - (void)tgtB:(NSString*)t y:(int)y tag:(int)tg {
     UIButton *b = [[UIButton alloc] initWithFrame:CGRectMake(390, y, 95, 30)];
-    [b setTitle:t forState:UIControlStateNormal]; b.tag = tg;
-    [b addTarget:self action:@selector(chT:) forControlEvents:UIControlEventTouchUpInside];
-    [_content addSubview:b];
+    [b setTitle:t forState:0]; b.tag = tg;
+    [b addTarget:self action:@selector(chT:) forControlEvents:64]; [_content addSubview:b];
 }
 
 - (void)chT:(UIButton*)s {
@@ -151,20 +160,3 @@ static RickzzFinalMenu *inst;
     }];
 }
 @end
-
-// --- HOOKS DE MEMÓRIA PROTEGIDOS ---
-void (*old_S)(void *i);
-void new_S(void *i) {
-    if (i != NULL && byp_on) {
-        if (aim) { *(float *)((uint64_t)i + 0xBC) = 0.0f; }
-        if (fov_atv) { *(float *)((uint64_t)i + 0x754) = fov_val; }
-    }
-    if (old_S) old_S(i);
-}
-
-__attribute__((constructor))
-static void init() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        MSHookFunction((void *)(_dyld_get_image_vmaddr_slide(0) + 0x103D8E124), (void *)new_S, (void **)&old_S);
-    });
-}
