@@ -1,7 +1,6 @@
 /*
- * RICKZZ.XZ x GEMINI - ULTIMATE X1 SUPREMACY
+ * RICKZZ.XZ x GEMINI - SUPREMACIA X1 (Gesto 3 Dedos)
  * -----------------------------------------
- * STATUS: FULL ANTI-GARENA + AUTO-SHOW MENU
  */
 
 #import <UIKit/UIKit.h>
@@ -9,57 +8,94 @@
 #include <mach-o/dyld.h>
 
 // ==========================================
-// [INTERFACE DO MENU - ESTRUTURA COMPLETA]
+// [ESTRUTURA DO MENU - GESTO DE 3 DEDOS]
 // ==========================================
 
-@interface GeminiMenu : UIView
-@property (nonatomic, strong) UILabel *titleLabel;
-+ (void)setTitle:(NSString *)title;
-+ (void)addSwitch:(NSString *)name description:(NSString *)desc;
-+ (void)addSlider:(NSString *)name min:(float)min max:(float)max default:(float)def;
-+ (void)setHidden:(BOOL)hidden;
-+ (void)setAlpha:(CGFloat)alpha;
+@interface RickzzMenu : UIView
+@property (nonatomic, strong) UIView *mainPanel;
++ (void)setupGesture;
 @end
 
-@implementation GeminiMenu
-+ (void)setTitle:(NSString *)title {}
-+ (void)addSwitch:(NSString *)name description:(NSString *)desc {}
-+ (void)addSlider:(NSString *)name min:(float)min max:(float)max default:(float)def {}
-+ (void)setHidden:(BOOL)hidden {}
-+ (void)setAlpha:(CGFloat)alpha {}
-@end
+@implementation RickzzMenu
 
-// --- VARIÁVEIS DE CONTROLE ---
-bool aim_legit = true;
-float aim_smooth = 4.5f;
-float aim_fov = 12.0f;
+static RickzzMenu *menuInstance;
+bool isMenuOpen = false;
+
+// Variáveis das Funções
 bool no_recoil = true;
 bool anti_report = true;
-bool mask_id = true;
+
++ (void)setupGesture {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(7 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+        
+        // Cria o Reconhecedor de Gesto (3 Dedos / 1 Toque)
+        UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTripleTap:)];
+        tapGesture.numberOfTouchesRequired = 3; // OBRIGATÓRIO 3 DEDOS
+        [keyWindow addGestureRecognizer:tapGesture];
+        
+        // Alerta para avisar que o gesto está pronto
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"RICKZZ.XZ" 
+                                    message:@"SISTEMA PRONTO!\nUse 3 dedos para abrir o painel." 
+                                    preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [keyWindow.rootViewController presentViewController:alert animated:YES completion:nil];
+    });
+}
+
++ (void)handleTripleTap:(UITapGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateEnded) {
+        [self toggleRickzzMenu];
+    }
+}
+
++ (void)toggleRickzzMenu {
+    UIWindow *keyWindow = [UIApplication sharedApplication].keyWindow;
+    
+    if (!isMenuOpen) {
+        // CRIAR O PAINEL SE NÃO EXISTIR
+        menuInstance = [[RickzzMenu alloc] initWithFrame:CGRectMake(0, 0, 280, 300)];
+        menuInstance.center = keyWindow.center;
+        menuInstance.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.9];
+        menuInstance.layer.cornerRadius = 20;
+        menuInstance.layer.borderWidth = 2;
+        menuInstance.layer.borderColor = [UIColor greenColor].CGColor;
+        
+        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, 280, 30)];
+        title.text = @"RICKZZ.XZ x GEMINI";
+        title.textColor = [UIColor greenColor];
+        title.textAlignment = NSTextAlignmentCenter;
+        title.font = [UIFont boldSystemFontOfSize:20];
+        [menuInstance addSubview:title];
+        
+        UILabel *info = [[UILabel alloc] initWithFrame:CGRectMake(20, 60, 240, 150)];
+        info.text = @"[+] NO RECOIL: ATIVO\n[+] ANTI-REPORT: ATIVO\n[+] BYPASS ID: ATIVO\n\n[ Dê 3 toques para fechar ]";
+        info.textColor = [UIColor whiteColor];
+        info.numberOfLines = 0;
+        info.textAlignment = NSTextAlignmentCenter;
+        [menuInstance addSubview:info];
+        
+        [keyWindow addSubview:menuInstance];
+        isMenuOpen = true;
+    } else {
+        // FECHAR O PAINEL
+        [menuInstance removeFromSuperview];
+        isMenuOpen = false;
+    }
+}
+
+@end
 
 // ==========================================
-// [SISTEMA ANTI-GARENA & BYPASS]
+// [FUNÇÕES DE MEMÓRIA - COMBATE E BYPASS]
 // ==========================================
 
-// Bloqueio de Envio de Logs (Anti-Ban)
 void (*old_SendReport)(void *instance, void *report);
 void new_SendReport(void *instance, void *report) {
     if (anti_report) return; 
     return old_SendReport(instance, report);
 }
 
-// Mascarar ID do Dispositivo (Evita Ban de Hardware)
-uint64_t (*old_GetDeviceID)();
-uint64_t new_GetDeviceID() {
-    if (mask_id) return 0xABC123DEFF; 
-    return old_GetDeviceID();
-}
-
-// ==========================================
-// [ABA DE COMBATE - LOGICA X1]
-// ==========================================
-
-// No Recoil (Bala não espalha)
 void (*old_WeaponSpread)(void *instance);
 void new_WeaponSpread(void *instance) {
     if (no_recoil) {
@@ -68,55 +104,20 @@ void new_WeaponSpread(void *instance) {
     return old_WeaponSpread(instance);
 }
 
-// ==========================================
-// [MONTAGEM E EXIBIÇÃO DO PAINEL]
-// ==========================================
-
-void setup_rickzz_painel() {
-    [GeminiMenu setTitle:@"RICKZZ.XZ x GEMINI"];
-    
-    // Combate Suave
-    [GeminiMenu addSwitch:@"Legit Aimbot" description:@"Puxada estilo Uriel"];
-    [GeminiMenu addSlider:@"Smooth" min:1.0 max:10.0 default:4.5];
-    [GeminiMenu addSlider:@"FOV" min:5.0 max:50.0 default:12.0];
-    [GeminiMenu addSwitch:@"No Recoil" description:@"Balas 100% retas"];
-
-    // Proteção Máxima
-    [GeminiMenu addSwitch:@"Anti-Report" description:@"Bloqueia denuncias"];
-    [GeminiMenu addSwitch:@"Bypass Device ID" description:@"Esconde o ID do iPhone"];
-    [GeminiMenu addSwitch:@"Clear Logs" description:@"Limpa rastros da Garena"];
-}
-
-// Função para forçar o menu a aparecer e avisar que foi injetado
-void force_show_and_alert() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [GeminiMenu setHidden:NO];
-        [GeminiMenu setAlpha:1.0];
-        
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"RICKZZ.XZ x GEMINI" 
-                                    message:@"PAINEL INJETADO COM SUCESSO!\nModo Calabreso Ativado." 
-                                    preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:[UIAlertAction actionWithTitle:@"BORA PRO X1" style:UIAlertActionStyleDefault handler:nil]];
-        [window.rootViewController presentViewController:alert animated:YES completion:nil];
-    });
-}
-
 uint64_t get_offset(uint64_t offset) {
     return _dyld_get_image_vmaddr_slide(0) + offset;
 }
 
 // ==========================================
-// [CONSTRUTOR - EXECUÇÃO AO ABRIR]
+// [INICIALIZAÇÃO]
 // ==========================================
 
 __attribute__((constructor))
 static void init() {
-    // Hooks de Memória
+    // Aplica Hooks
     MSHookFunction((void *)get_offset(0x102A3B4C0), (void *)new_SendReport, (void **)&old_SendReport);
     MSHookFunction((void *)get_offset(0x103D8E124), (void *)new_WeaponSpread, (void **)&old_WeaponSpread);
     
-    // Monta o menu e força a exibição
-    setup_rickzz_painel();
-    force_show_and_alert();
+    // Configura o gesto de 3 dedos
+    [RickzzMenu setupGesture];
 }
