@@ -10,29 +10,25 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # APAGA QUALQUER PASTA ANTIGA (Resolve o Erro 128 das suas fotos)
-          rm -rf $GITHUB_WORKSPACE/theos_final
+          # Limpeza total para matar o erro "Already Exists" (128)
+          rm -rf $GITHUB_WORKSPACE/theos_viva
           
-          # Instalação limpa dentro da pasta do projeto
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_final
+          # Clona o motor e os SDKs direto na pasta do projeto
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_viva
+          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_viva/sdks
           
-          # Baixa os SDKs de forma segura
-          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_final/sdks
-          
-          # Salva o caminho para o compilador não se perder
-          echo "THEOS=$GITHUB_WORKSPACE/theos_final" >> $GITHUB_ENV
+          # Avisa o sistema onde o motor está
+          echo "THEOS=$GITHUB_WORKSPACE/theos_viva" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
-          # Usa a variável que salvamos acima
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          
-          # COMPILAÇÃO REAL (Isso vai fazer o arquivo ter mais de 30KB)
+          # Força a compilação. Se o arquivo final tiver 700 bytes de novo, me avisa!
           make package FINALPACKAGE=1
           
-      - name: Upload Finished DEB
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Real-FF
+          name: Painel-Final-FF
           path: packages/*.deb
