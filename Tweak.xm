@@ -1,35 +1,29 @@
 /*
- * RICKZZ.XZ - PAINEL VIP V3 (EDIÇÃO FINAL)
+ * RICKZZ.XZ - PAINEL VIP V3 (FIX COMPILAÇÃO)
  */
 
 #import <UIKit/UIKit.h>
 #import <Security/Security.h>
 #include <substrate.h>
-#include <mach-o/dyld.h>
 
 // Variáveis de controle
-static bool aim __attribute__((unused)) = false;
-static bool byp_on __attribute__((unused)) = false;
-static bool l_cache __attribute__((unused)) = false;
-static bool a_report __attribute__((unused)) = false;
-static bool no_recoil __attribute__((unused)) = false;
+static bool aim = false;
+static bool byp_on = false;
+static bool l_cache = false;
+static bool a_report = false;
+static bool no_recoil = false;
 static float fov_val __attribute__((unused)) = 60.0f;
 static int aim_tgt __attribute__((unused)) = 0; 
 
-// --- KEYCHAIN KILLER (LIMPA BAN DO APARELHO) ---
+// --- KEYCHAIN KILLER ---
 void deep_clean_id() {
     NSDictionary *spec = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword};
     SecItemDelete((__bridge CFDictionaryRef)spec);
     NSString *docs = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents"];
-    NSFileManager *fm = [NSFileManager defaultManager];
-    [fm removeItemAtPath:[docs stringByAppendingPathComponent:@"com.garena.msdk"] error:nil];
+    [[NSFileManager defaultManager] removeItemAtPath:[docs stringByAppendingPathComponent:@"com.garena.msdk"] error:nil];
 }
 
-// --- ANTI-DETECÇÃO DE BUNDLE ID ---
-MSHookMessageEx(NSClassFromString(@"NSBundle"), @selector(bundleIdentifier), imp_implementationWithBlock(^NSString* (id self) {
-    return @"com.dts.freefireth";
-}), NULL);
-
+// --- INTERFACE DO MENU ---
 @interface RickzzFinalMenu : UIView
 @property (nonatomic, strong) UIView *bg;
 @property (nonatomic, strong) UIView *content;
@@ -39,9 +33,16 @@ MSHookMessageEx(NSClassFromString(@"NSBundle"), @selector(bundleIdentifier), imp
 @implementation RickzzFinalMenu
 static RickzzFinalMenu *inst;
 
-+ (void)load {
+// Função que o Theos executa ao iniciar o app
+static void __attribute__((constructor)) initialize() {
+    // Engana o Bundle ID para evitar ban de 3 segundos
+    MSHookMessageEx(NSClassFromString(@"NSBundle"), @selector(bundleIdentifier), imp_implementationWithBlock(^NSString* (id self) {
+        return @"com.dts.freefireth";
+    }), NULL);
+
+    // Carrega o menu após 15 segundos
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(show)];
+        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzFinalMenu class] action:@selector(show)];
         t.numberOfTouchesRequired = 3;
         [[UIApplication sharedApplication].keyWindow addGestureRecognizer:t];
     });
