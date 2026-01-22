@@ -10,14 +10,17 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Mudando o nome da pasta para ignorar o erro de "already exists"
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos_novo
-          git clone https://github.com/theos/sdks.git $HOME/theos_novo/sdks
+          # Limpeza total de qualquer pasta que o GitHub tenha travado
+          rm -rf $HOME/theos
+          rm -rf $HOME/theos_novo
+          # Instalação em um caminho totalmente novo e limpo
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos_final
+          git clone https://github.com/theos/sdks.git $HOME/theos_final/sdks
           
       - name: Build
         run: |
-          # Avisando ao compilador onde está a pasta nova
-          export THEOS=$HOME/theos_novo
+          # Apontando para o novo caminho final
+          export THEOS=$HOME/theos_final
           chmod -R +x $THEOS/bin
           make package FINALPACKAGE=1
           
