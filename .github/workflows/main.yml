@@ -26,7 +26,7 @@ jobs:
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # 'make clean' é o segredo para o arquivo não vir com 700 bytes
+          # 'make clean' garante que o arquivo não venha vazio (700 bytes)
           make clean package FINALPACKAGE=1
           
       - name: Upload Artifact
