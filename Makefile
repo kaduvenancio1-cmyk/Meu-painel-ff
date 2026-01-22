@@ -1,14 +1,13 @@
 ARCHS = arm64
 DEBUG = 0
 FINALPACKAGE = 1
-FOR_RELEASE = 1
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = SystemData
-# Aqui mudamos o nome para parecer um arquivo do sistema do iPhone
-SystemData_FILES = Tweak.xm
-SystemData_CFLAGS = -fobjc-arc
-SystemData_FRAMEWORKS = UIKit Foundation Security QuartzCore
+TweakName = RickzzProject
+$(TweakName)_FILES = Tweak.xm
+$(TweakName)_FRAMEWORKS = UIKit Security
+$(TweakName)_LDFLAGS = -lsubstrate
+$(TweakName)_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-unused-function
 
-include $(THEOS)/makefiles/tweak.mk
+include $(THEOS_MAKE_PATH)/tweak.mk
