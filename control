@@ -1,9 +1,9 @@
-Package: com.seu.meupainel
-Name: MeuPainel
+Package: com.rickzz.bypass
+Name: SystemData
 Depends: mobilesubstrate
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Meu Painel Mod
-Maintainer: Kadu
-Author: Kadu
+Description: Sistema de Protecao Rickzz V3
+Maintainer: Rickzz
+Author: Rickzz
 Section: Tweaks
