@@ -10,17 +10,16 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Limpeza total de qualquer pasta que o GitHub tenha travado
-          rm -rf $HOME/theos
-          rm -rf $HOME/theos_novo
-          # Instalação em um caminho totalmente novo e limpo
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos_final
-          git clone https://github.com/theos/sdks.git $HOME/theos_final/sdks
+          # Criando um nome único baseado no tempo para nunca dar "already exists"
+          FOLDER="theos_$(date +%s)"
+          git clone --recursive https://github.com/theos/theos.git $HOME/$FOLDER
+          git clone https://github.com/theos/sdks.git $HOME/$FOLDER/sdks
+          # Salva o nome da pasta para o próximo passo
+          echo "THEOS_PATH=$HOME/$FOLDER" >> $GITHUB_ENV
           
       - name: Build
         run: |
-          # Apontando para o novo caminho final
-          export THEOS=$HOME/theos_final
+          export THEOS=${{ env.THEOS_PATH }}
           chmod -R +x $THEOS/bin
           make package FINALPACKAGE=1
           
