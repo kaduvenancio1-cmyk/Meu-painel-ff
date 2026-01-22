@@ -10,19 +10,15 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Limpeza agressiva para matar o erro "already exists"
-          rm -rf $HOME/theos
-          # Instalação limpa
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          # Baixa os SDKs para a pasta correta sem conflito
-          git clone https://github.com/theos/sdks.git $HOME/theos/sdks
+          # Mudando o nome da pasta para ignorar o erro de "already exists"
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos_novo
+          git clone https://github.com/theos/sdks.git $HOME/theos_novo/sdks
           
       - name: Build
         run: |
-          export THEOS=$HOME/theos
-          # Dá permissão aos arquivos do compilador
+          # Avisando ao compilador onde está a pasta nova
+          export THEOS=$HOME/theos_novo
           chmod -R +x $THEOS/bin
-          # Compila o painel de vez
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
