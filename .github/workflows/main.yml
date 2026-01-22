@@ -5,30 +5,31 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - name: Checkout Project
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Theos
         run: |
-          # Limpeza total para matar o erro "Already Exists" (128)
-          rm -rf $GITHUB_WORKSPACE/theos_viva
+          # Gera um nome de pasta único (ex: theos_123456)
+          UNIQUE_FOLDER="theos_$(date +%s)"
+          THEOS_PATH="$GITHUB_WORKSPACE/$UNIQUE_FOLDER"
           
-          # Clona o motor e os SDKs direto na pasta do projeto
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_viva
-          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_viva/sdks
+          # Clona tudo nessa pasta virgem
+          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
           
-          # Avisa o sistema onde o motor está
-          echo "THEOS=$GITHUB_WORKSPACE/theos_viva" >> $GITHUB_ENV
+          # Passa o caminho para o próximo passo
+          echo "THEOS_FINAL=$THEOS_PATH" >> $GITHUB_ENV
 
-      - name: Build Package
+      - name: Build
         run: |
-          export THEOS=${{ env.THEOS }}
+          export THEOS=${{ env.THEOS_FINAL }}
           chmod -R +x $THEOS/bin
-          # Força a compilação. Se o arquivo final tiver 700 bytes de novo, me avisa!
+          # Compila o arquivo real (30KB+)
           make package FINALPACKAGE=1
           
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Final-FF
+          name: Painel-Sem-Erro
           path: packages/*.deb
