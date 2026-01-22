@@ -10,19 +10,21 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Limpeza garantida
-          rm -rf $GITHUB_WORKSPACE/theos
-          # Clone oficial do motor
-          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos
-          # Clone oficial dos SDKs
-          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos/sdks
+          # Mata qualquer pasta que esteja travando o build (Resolve o Erro 128)
+          rm -rf $GITHUB_WORKSPACE/theos_final
+          
+          # Instalação limpa em um novo local
+          git clone --recursive https://github.com/theos/theos.git $GITHUB_WORKSPACE/theos_final
+          git clone --depth 1 https://github.com/theos/sdks.git $GITHUB_WORKSPACE/theos_final/sdks
+          
+          # Salva o caminho para o compilador achar
+          echo "THEOS=$GITHUB_WORKSPACE/theos_final" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
-          # Define a variável que o comando 'make' precisa
-          export THEOS=$GITHUB_WORKSPACE/theos
+          export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # O comando principal para gerar o arquivo real
+          # Força a compilação total para não vir vazio
           make package FINALPACKAGE=1
           
       - name: Upload Finished DEB
