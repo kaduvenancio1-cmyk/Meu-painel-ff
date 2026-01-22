@@ -4,10 +4,9 @@ FINALPACKAGE = 1
 
 include $(THEOS)/makefiles/common.mk
 
-TweakName = RickzzProject
+TweakName = SystemData
 $(TweakName)_FILES = Tweak.xm
-$(TweakName)_FRAMEWORKS = UIKit Security
-$(TweakName)_LDFLAGS = -lsubstrate
-$(TweakName)_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-unused-function
+$(TweakName)_FRAMEWORKS = UIKit Security CoreGraphics QuartzCore
+$(TweakName)_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
