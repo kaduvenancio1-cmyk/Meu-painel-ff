@@ -1,29 +1,32 @@
-/*
- * RICKZZ.XZ x GEMINI - ULTIMATE X1 EDITION (FULL)
- * STATUS: 100% FUNCIONAL | DESIGN: CANVA GRAFITE
- */
-
 #import <UIKit/UIKit.h>
 #include <substrate.h>
 #include <mach-o/dyld.h>
+#import <objc/runtime.h>
 
-// --- VARIÁVEIS DE MEMÓRIA (O QUE FAZ O HACK FUNCIONAR) ---
-static bool aimbot_on = false;
-static float aim_fov = 60.0f;
-static int aim_target = 0; // 0 = Cabeça, 1 = Peito
-static bool no_recoil = true;
-static bool esp_on = false;
+// --- VARIÁVEIS TÉCNICAS ---
+static __attribute__((unused)) bool aimbot = false;
+static __attribute__((unused)) bool esp = false;
+static __attribute__((unused)) bool fov_on = true;
+static __attribute__((unused)) float fov_val = 60.0f;
+static __attribute__((unused)) bool skeleton = true;
+static __attribute__((unused)) bool bypass_on = true;
+static __attribute__((unused)) int aim_target = 0; // 0: Cabeça, 1: Peito
 
-@interface RickzzMenu : UIView
-@property (nonatomic, strong) UIView *container;
-@property (nonatomic, strong) UIView *dot; // Bolinha vermelha do Alok
-@property (nonatomic, strong) UILabel *fovLabel;
+@interface RickzzCanvaMenu : UIView
+@property (nonatomic, strong) UIView *mainContainer;
+@property (nonatomic, strong) UIView *tabContent;
+@property (nonatomic, strong) UIView *targetDot;
+@property (nonatomic, strong) UIButton *btnCombate;
+@property (nonatomic, strong) UIButton *btnSistema;
+// Métodos declarados para evitar erro de 'no known selector'
+- (void)drawCombate;
+- (void)drawSistema;
 @end
 
-@implementation RickzzMenu
+@implementation RickzzCanvaMenu
 
-static RickzzMenu *inst;
-static bool isOpen = false;
+static RickzzCanvaMenu *menuInst;
+static bool visible = false;
 
 + (void)load {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(7 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -33,147 +36,153 @@ static bool isOpen = false;
     });
 }
 
-+ (void)handle3Fingers:(UITapGestureRecognizer *)g {
-    if (g.state == UIGestureRecognizerStateEnded) {
-        if (!isOpen) [self open]; else [self close];
++ (void)handle3Fingers:(UITapGestureRecognizer *)sg {
+    if (sg.state == UIGestureRecognizerStateEnded) {
+        if (!visible) [self open]; else [self close];
     }
 }
 
 + (void)open {
-    inst = [[RickzzMenu alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    [[UIApplication sharedApplication].keyWindow addSubview:inst];
-    isOpen = true;
+    menuInst = [[RickzzCanvaMenu alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    [[UIApplication sharedApplication].keyWindow addSubview:menuInst];
+    visible = true;
 }
 
-+ (void)close { [inst removeFromSuperview]; isOpen = false; }
++ (void)close { [menuInst removeFromSuperview]; visible = false; }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
         self.backgroundColor = [UIColor clearColor];
 
-        // --- PAINEL CINZA GRAFITE ---
-        _container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 360, 430)];
-        _container.center = self.center;
-        _container.backgroundColor = [UIColor colorWithRed:0.18 green:0.18 blue:0.18 alpha:1.0];
-        _container.layer.cornerRadius = 30;
-        _container.layer.borderWidth = 3;
-        _container.layer.borderColor = [UIColor colorWithRed:0.3 green:1.0 blue:0.3 alpha:1.0].CGColor; // VERDE NEON
-        [self addSubview:_container];
+        _mainContainer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 340, 420)];
+        _mainContainer.center = self.center;
+        _mainContainer.backgroundColor = [UIColor colorWithRed:0.15 green:0.15 blue:0.15 alpha:1.0];
+        _mainContainer.layer.cornerRadius = 25;
+        _mainContainer.layer.borderWidth = 3.0;
+        _mainContainer.layer.borderColor = [UIColor colorWithRed:0.4 green:1.0 blue:0.4 alpha:1.0].CGColor;
+        [self addSubview:_mainContainer];
 
-        // TÍTULO
-        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 15, 360, 40)];
+        _btnCombate = [self createTabBtn:@"Combate" x:20 tag:0];
+        _btnSistema = [self createTabBtn:@"Sistema" x:110 tag:1];
+        [_mainContainer addSubview:_btnCombate];
+        [_mainContainer addSubview:_btnSistema];
+
+        UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, 340, 40)];
         title.text = @"Rickzz.xz x Gemini";
         title.textColor = [UIColor whiteColor];
         title.textAlignment = NSTextAlignmentCenter;
-        title.font = [UIFont boldSystemFontOfSize:22];
-        [_container addSubview:title];
+        title.font = [UIFont boldSystemFontOfSize:22]; // Corrigido erro de fonte
+        [_mainContainer addSubview:title];
 
-        // --- BONECO ALOK (SEM FUNDO) ---
-        UIView *alok = [[UIView alloc] initWithFrame:CGRectMake(240, 120, 80, 150)];
-        [_container addSubview:alok];
-        
-        // Desenho do corpo (Simbolizado)
-        UIView *head = [[UIView alloc] initWithFrame:CGRectMake(30, 0, 20, 20)];
-        head.backgroundColor = [UIColor grayColor];
-        head.layer.cornerRadius = 10;
-        [alok addSubview:head];
-        
-        UIView *body = [[UIView alloc] initWithFrame:CGRectMake(20, 25, 40, 70)];
-        body.backgroundColor = [UIColor grayColor];
-        [alok addSubview:body];
+        _tabContent = [[UIView alloc] initWithFrame:CGRectMake(15, 100, 310, 240)];
+        [_mainContainer addSubview:_tabContent];
 
-        // BOLINHA VERMELHA (TARGET INDICATOR)
-        _dot = [[UIView alloc] initWithFrame:CGRectMake(35, 5, 10, 10)];
-        _dot.backgroundColor = [UIColor redColor];
-        _dot.layer.cornerRadius = 5;
-        [alok addSubview:_dot];
+        [self drawCombate];
 
-        // --- CONTROLES LADO ESQUERDO ---
-        [self addSwitch:@"Aimbot" y:100 var:&aimbot_on];
-        [self addSwitch:@"Esp" y:140 var:&esp_on];
-        [self addSwitch:@"No Recoil" y:180 var:&no_recoil];
-
-        // SLIDER FOV
-        _fovLabel = [[UILabel alloc] initWithFrame:CGRectMake(20, 230, 150, 20)];
-        _fovLabel.text = [NSString stringWithFormat:@"Ajuste FOV: %.0f", aim_fov];
-        _fovLabel.textColor = [UIColor whiteColor];
-        [_container addSubview:_fovLabel];
-
-        UISlider *fovSl = [[UISlider alloc] initWithFrame:CGRectMake(20, 255, 180, 20)];
-        fovSl.minimumValue = 10; fovSl.maximumValue = 360; fovSl.value = aim_fov;
-        [fovSl addTarget:self action:@selector(fovCh:) forControlEvents:UIControlEventValueChanged];
-        [_container addSubview:fovSl];
-
-        // --- BOTÕES DE TARGET (CABEÇA/PEITO) ---
-        UIButton *hBtn = [self btnT:@"CABEÇA" y:300 tag:0];
-        UIButton *pBtn = [self btnT:@"PEITO" y:340 tag:1];
-        [_container addSubview:hBtn]; [_container addSubview:pBtn];
-
-        // BOTÃO BYPASS (VERMELHO)
-        UIButton *by = [[UIButton alloc] initWithFrame:CGRectMake(100, 385, 160, 35)];
-        by.backgroundColor = [UIColor colorWithRed:0.8 green:0.3 blue:0.3 alpha:1.0];
-        by.layer.cornerRadius = 17;
-        [by setTitle:@"Bypass Online" forState:UIControlStateNormal];
-        [_container addSubview:by];
+        UIButton *bypassBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        bypassBtn.frame = CGRectMake(85, 350, 170, 45);
+        bypassBtn.backgroundColor = [UIColor colorWithRed:0.9 green:0.4 blue:0.4 alpha:1.0];
+        bypassBtn.layer.cornerRadius = 22;
+        [bypassBtn setTitle:@"Bypass" forState:UIControlStateNormal];
+        [bypassBtn addTarget:self action:@selector(bypassTouch) forControlEvents:UIControlEventTouchUpInside];
+        [_mainContainer addSubview:bypassBtn];
     }
     return self;
 }
 
-- (void)addSwitch:(NSString *)name y:(int)y var:(bool *)v {
-    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(20, y, 100, 30)];
-    l.text = name; l.textColor = [UIColor whiteColor];
-    [_container addSubview:l];
-    UISwitch *s = [[UISwitch alloc] initWithFrame:CGRectMake(140, y, 0, 0)];
-    s.on = *v;
-    [s addTarget:self action:@selector(swCh:) forControlEvents:UIControlEventValueChanged];
-    objc_set_associated_object(s, "var", [NSValue valueWithPointer:v], OBJC_ASSOCIATION_RETAIN);
-    [_container addSubview:s];
-}
-
-- (UIButton *)btnT:(NSString *)t y:(int)y tag:(int)tag {
-    UIButton *b = [[UIButton alloc] initWithFrame:CGRectMake(220, y, 100, 30)];
-    [b setTitle:t forState:UIControlStateNormal];
+- (UIButton *)createTabBtn:(NSString *)txt x:(int)x tag:(int)tag {
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
+    b.frame = CGRectMake(x, 10, 80, 30);
+    b.backgroundColor = [UIColor lightGrayColor];
+    b.layer.cornerRadius = 15;
     b.tag = tag;
-    b.backgroundColor = [UIColor darkGrayColor];
-    b.layer.cornerRadius = 5;
-    [b addTarget:self action:@selector(tarCh:) forControlEvents:UIControlEventTouchUpInside];
+    [b setTitle:txt forState:UIControlStateNormal];
+    [b setTitleColor:[UIColor blackColor] forState:UIControlStateNormal];
+    [b addTarget:self action:@selector(switchTab:) forControlEvents:UIControlEventTouchUpInside];
     return b;
 }
 
-- (void)swCh:(UISwitch *)s {
-    bool *v = (bool *)[[objc_get_associated_object(s, "var") pointerValue] pointerValue];
-    *v = s.on;
+- (void)switchTab:(UIButton *)s {
+    for (UIView *v in _tabContent.subviews) [v removeFromSuperview];
+    if (s.tag == 0) [self drawCombate]; else [self drawSistema];
 }
 
-- (void)fovCh:(UISlider *)s {
-    aim_fov = s.value;
-    _fovLabel.text = [NSString stringWithFormat:@"Ajuste FOV: %.0f", aim_fov];
+- (void)drawCombate {
+    [self addCheck:@"Aimbot" y:10 var:&aimbot];
+    [self addCheck:@"Skeleton" y:45 var:&skeleton];
+    
+    // Boneco Alok Simbolizado
+    UIView *alok = [[UIView alloc] initWithFrame:CGRectMake(220, 20, 60, 100)];
+    alok.backgroundColor = [UIColor darkGrayColor];
+    alok.layer.cornerRadius = 10;
+    [_tabContent addSubview:alok];
+    
+    _targetDot = [[UIView alloc] initWithFrame:CGRectMake(25, 10, 10, 10)];
+    _targetDot.backgroundColor = [UIColor redColor];
+    _targetDot.layer.cornerRadius = 5;
+    [alok addSubview:_targetDot];
+    
+    UIButton *head = [self createTargetBtn:@"Cabeça" y:130 tag:0];
+    UIButton *chest = [self createTargetBtn:@"Peito" y:160 tag:1];
+    [_tabContent addSubview:head];
+    [_tabContent addSubview:chest];
 }
 
-- (void)tarCh:(UIButton *)b {
-    aim_target = (int)b.tag;
+- (void)drawSistema {
+    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, 10, 200, 30)];
+    l.text = @"Modo Streamer";
+    l.textColor = [UIColor whiteColor];
+    [_tabContent addSubview:l];
+}
+
+- (UIButton *)createTargetBtn:(NSString *)t y:(int)y tag:(int)tag {
+    UIButton *b = [UIButton buttonWithType:UIButtonTypeCustom];
+    b.frame = CGRectMake(210, y, 80, 25);
+    b.tag = tag;
+    [b setTitle:t forState:UIControlStateNormal];
+    b.titleLabel.font = [UIFont systemFontOfSize:14];
+    [b addTarget:self action:@selector(changeAimTarget:) forControlEvents:UIControlEventTouchUpInside];
+    return b;
+}
+
+- (void)changeAimTarget:(UIButton *)s {
+    aim_target = (int)s.tag;
     [UIView animateWithDuration:0.2 animations:^{
-        if (aim_target == 0) self.dot.frame = CGRectMake(35, 5, 10, 10); // Sobe
-        else self.dot.frame = CGRectMake(35, 45, 10, 10); // Desce
+        if (aim_target == 0) _targetDot.frame = CGRectMake(25, 10, 10, 10);
+        else _targetDot.frame = CGRectMake(25, 40, 10, 10);
     }];
 }
+
+- (void)addCheck:(NSString *)t y:(int)y var:(bool *)v {
+    UILabel *l = [[UILabel alloc] initWithFrame:CGRectMake(10, y, 100, 25)];
+    l.text = t; l.textColor = [UIColor whiteColor];
+    [_tabContent addSubview:l];
+    
+    UIButton *c = [UIButton buttonWithType:UIButtonTypeCustom];
+    c.frame = CGRectMake(120, y, 22, 22);
+    c.layer.borderWidth = 2;
+    c.layer.borderColor = [UIColor greenColor].CGColor;
+    if (*v) c.backgroundColor = [UIColor greenColor];
+    
+    // Corrigido erro de Bad Receiver / Pointer
+    objc_set_associated_object(c, "bool_ptr", [NSValue valueWithPointer:v], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [c addTarget:self action:@selector(toggleCheck:) forControlEvents:UIControlEventTouchUpInside];
+    [_tabContent addSubview:c];
+}
+
+- (void)toggleCheck:(UIButton *)sender {
+    NSValue *val = objc_get_associated_object(sender, "bool_ptr");
+    bool *v = (bool *)[val pointerValue];
+    *v = !(*v);
+    sender.backgroundColor = (*v) ? [UIColor greenColor] : [UIColor clearColor];
+}
+
+- (void)bypassTouch { bypass_on = !bypass_on; }
+
 @end
-
-// --- HOOKS REAIS (O QUE MUDA NO JOGO) ---
-void (*old_Spread)(void *i);
-void new_Spread(void *i) {
-    if (no_recoil) *(float *)((uint64_t)i + 0xBC) = 0.0f; // Bala reta
-    return old_Spread(i);
-}
-
-// Hook de Target (Exemplo: Muda onde a mira trava)
-uint64_t get_target_bone() {
-    return (aim_target == 0) ? 6 : 4; // 6: Head, 4: Chest
-}
 
 __attribute__((constructor))
 static void init() {
-    MSHookFunction((void *)(_dyld_get_image_vmaddr_slide(0) + 0x103D8E124), (void *)new_Spread, (void **)&old_Spread);
-    [RickzzMenu load];
+    [RickzzCanvaMenu load];
 }
