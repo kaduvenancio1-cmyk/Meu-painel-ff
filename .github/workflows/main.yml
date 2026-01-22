@@ -10,17 +10,15 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Criamos um local temporário que o GitHub limpa a cada segundo
+          # Define um local único no diretório temporário
           export THEOS_TMP=$RUNNER_TEMP/theos_final
           rm -rf $THEOS_TMP
           
-          # Baixa apenas o motor essencial (sem subfolders que dão erro)
+          # Clona o motor Theos
           git clone --recursive https://github.com/theos/theos.git $THEOS_TMP
           
-          # Em vez de 'git clone', usamos download direto para pular o erro 128
-          mkdir -p $THEOS_TMP/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_TMP/sdks/sdk.tar.xz
-          tar -xf $THEOS_TMP/sdks/sdk.tar.xz -C $THEOS_TMP/sdks/
+          # Em vez de curl, vamos clonar os SDKs direto (Mais seguro, sem erro de tar)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_TMP/sdks
           
           echo "THEOS=$THEOS_TMP" >> $GITHUB_ENV
 
@@ -28,11 +26,11 @@ jobs:
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # O comando 'clean' limpa aquele rastro de 700 bytes
+          # O clean é essencial para o arquivo não vir com 700 bytes
           make clean package FINALPACKAGE=1
           
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial
+          name: Painel-Pronto
           path: packages/*.deb
