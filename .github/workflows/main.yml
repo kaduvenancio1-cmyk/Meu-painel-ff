@@ -10,17 +10,26 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Criando um nome único baseado no tempo para nunca dar "already exists"
-          FOLDER="theos_$(date +%s)"
-          git clone --recursive https://github.com/theos/theos.git $HOME/$FOLDER
-          git clone https://github.com/theos/sdks.git $HOME/$FOLDER/sdks
-          # Salva o nome da pasta para o próximo passo
-          echo "THEOS_PATH=$HOME/$FOLDER" >> $GITHUB_ENV
+          # Usando o diretório temporário do sistema para fugir do bloqueio de pasta
+          export THEOS_TMP=$RUNNER_TEMP/theos
+          rm -rf $THEOS_TMP
+          
+          # Clonando o motor e os SDKs em um lugar que o GitHub limpa toda hora
+          git clone --recursive https://github.com/theos/theos.git $THEOS_TMP
+          
+          # Forçando o download do SDK para dentro da pasta correta
+          mkdir -p $THEOS_TMP/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_TMP/sdks/sdk.tar.xz
+          tar -xf $THEOS_TMP/sdks/sdk.tar.xz -C $THEOS_TMP/sdks/
+          
+          # Passando o caminho para o próximo passo
+          echo "THEOS=$THEOS_TMP" >> $GITHUB_ENV
           
       - name: Build
         run: |
-          export THEOS=${{ env.THEOS_PATH }}
-          chmod -R +x $THEOS/bin
+          # Usa a variável que criamos acima
+          chmod -R +x ${{ env.THEOS }}/bin
+          export THEOS=${{ env.THEOS }}
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
