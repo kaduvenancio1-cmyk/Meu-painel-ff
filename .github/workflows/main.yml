@@ -10,27 +10,28 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Usamos um caminho novo para garantir 0 conflitos
-          export THEOS_DEST=$RUNNER_TEMP/theos_viva
-          rm -rf $THEOS_DEST
+          # Cria um nome de pasta que muda a cada build para evitar o erro 128
+          THEOS_ID="theos_$(date +%s)"
+          export THEOS_PATH="$RUNNER_TEMP/$THEOS_ID"
           
-          # Clona o motor principal
-          git clone --recursive https://github.com/theos/theos.git $THEOS_DEST
+          # Clona o motor Theos do zero
+          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
           
-          # CLONA os SDKs (Dura uns 3 minutos, mas NÃO CORROMPE)
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DEST/sdks
+          # Clona os SDKs (Método lento mas seguro contra arquivos corrompidos)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
           
-          echo "THEOS=$THEOS_DEST" >> $GITHUB_ENV
+          # Salva o caminho exato para o próximo passo
+          echo "THEOS_FINAL=$THEOS_PATH" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
-          export THEOS=${{ env.THEOS }}
+          export THEOS=${{ env.THEOS_FINAL }}
           chmod -R +x $THEOS/bin
-          # 'make clean' garante que o arquivo não venha vazio (700 bytes)
+          # 'make clean' obriga o sistema a gerar um arquivo real e funcional
           make clean package FINALPACKAGE=1
           
-      - name: Upload Artifact
+      - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial-FF
+          name: Painel-Instalavel
           path: packages/*.deb
