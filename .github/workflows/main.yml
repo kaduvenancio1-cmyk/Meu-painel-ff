@@ -8,34 +8,30 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos (Absolute Clean)
+      - name: Setup Theos
         run: |
-          # Criamos uma pasta com ID único baseado na hora para NUNCA dar "already exists"
-          THEOS_ID="theos_build_$(date +%s)"
-          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
+          # Gera um nome único (ex: theos_1705900000) para o GitHub não travar
+          THEOS_UNIQUE="theos_$(date +%s)"
+          export THEOS_PATH="$RUNNER_TEMP/$THEOS_UNIQUE"
           
-          echo "Limpando qualquer rastro anterior..."
-          rm -rf $THEOS_DIR
+          echo "Instalando em local inédito: $THEOS_PATH"
+          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
           
-          echo "Instalando Theos em: $THEOS_DIR"
-          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
+          # Baixa os SDKs (Método lento, mas que NÃO corrompe)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
           
-          echo "Baixando SDKs de forma segura..."
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
-          
-          # Exporta para os próximos passos usarem
-          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
+          # Salva o caminho para o próximo passo
+          echo "THEOS=$THEOS_PATH" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          
-          # 'make clean' é obrigatório para não gerar arquivo de 700 bytes
+          # 'make clean' obriga o arquivo a ter os 30KB+ reais
           make clean package FINALPACKAGE=1
           
-      - name: Upload Finished DEB
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial-Funcional
+          name: Painel-Final-FF
           path: packages/*.deb
