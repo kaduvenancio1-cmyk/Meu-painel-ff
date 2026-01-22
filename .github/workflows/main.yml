@@ -7,26 +7,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Theos
         run: |
-          # Define o local temporário
-          export THEOS_DEST=$RUNNER_TEMP/theos
+          # Instala o motor direto na pasta onde o código já está (evita erro de permissão)
+          git clone --recursive https://github.com/theos/theos.git ./theos_motor
           
-          # Clona o motor Theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS_DEST
+          # Baixa o SDK direto para a pasta interna
+          git clone --depth 1 https://github.com/theos/sdks.git ./theos_motor/sdks
           
-          # CLONA os SDKs (Dura mais, mas não corrompe como o tar)
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DEST/sdks
-          
-          # Salva o caminho para o próximo passo
-          echo "THEOS=$THEOS_DEST" >> $GITHUB_ENV
-          
+          # Avisa o sistema onde o motor está escondido
+          echo "THEOS=$GITHUB_WORKSPACE/theos_motor" >> $GITHUB_ENV
+
       - name: Build
         run: |
           export THEOS=${{ env.THEOS }}
+          # Dá permissão de execução
           chmod -R +x $THEOS/bin
-          # Compila o painel
+          # Tenta compilar
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
