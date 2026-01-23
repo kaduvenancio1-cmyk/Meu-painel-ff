@@ -34,7 +34,8 @@ static void stealth_load() {
 
 + (void)toggle {
     UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-    if ([w viewWithTag:999]) [[w viewWithTag:999] removeFromSuperview];
+    UIView *old = [w viewWithTag:999];
+    if (old) [old removeFromSuperview];
     else {
         RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:w.bounds];
         m.tag = 999; [w addSubview:m];
