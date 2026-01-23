@@ -10,24 +10,31 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # Instala o ldid e outras ferramentas de assinatura necessárias
-          brew install ldid xz
+          # Instala o ldid necessário para assinar o arquivo final
+          brew install ldid
 
       - name: Setup Theos
         run: |
           export THEOS_PATH="$RUNNER_TEMP/theos_final"
+          # Limpeza profunda para evitar o erro 'already exists'
           rm -rf $THEOS_PATH
+          
           git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
+          
+          # Removemos a pasta automática para garantir que o clone do SDK funcione
+          rm -rf $THEOS_PATH/sdks
           git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
+          
           echo "THEOS=$THEOS_PATH" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
-          # Adiciona o caminho das ferramentas instaladas ao sistema
+          # Garante que o sistema encontre o ldid instalado pelo brew
           export PATH="/usr/local/bin:$PATH"
           chmod -R +x $THEOS/bin
           
+          # O comando FINALPACKAGE=1 gera o .deb otimizado
           make clean package FINALPACKAGE=1
           
       - name: Upload Artifact
