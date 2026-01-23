@@ -3,11 +3,11 @@
         Bundles = (
             "com.dts.freefireth",
             "com.dts.freefiremax",
-            "com.clone.ff1",
-            "com.clone.ff2",
-            "com.clone.ff3",
-            "com.clone.ff4",
-            "com.clone.ff5"
+            "com.novo.clean01",
+            "com.novo.clean02",
+            "com.novo.clean03",
+            "com.novo.clean04",
+            "com.novo.clean05"
         );
     };
 }
