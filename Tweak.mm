@@ -1,10 +1,9 @@
 #import <UIKit/UIKit.h>
 #import <Security/Security.h>
-#import <mach-o/dyld.h> // ADICIONADO PARA CORRIGIR O ERRO DO PRINT
-#import <substrate.h>
+#import <mach-o/dyld.h> // Resolve o erro do seu print
 
-// --- BUSCA DA BASE DO JOGO ---
-uintptr_t get_base_address() {
+// Estrutura para busca de memória
+uintptr_t get_base() {
     return (uintptr_t)_dyld_get_image_header(0);
 }
 
@@ -18,8 +17,8 @@ uintptr_t get_base_address() {
 
 @implementation RickzzMenu
 
-// LIMPEZA DE CONTA AO INICIAR (GUEST RESET)
-static void deep_clean() {
+// LIMPEZA AUTOMÁTICA DE CONTA SUSPENSA
+static void reset_account() {
     NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk/guest.dat"];
     [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
     
@@ -29,19 +28,19 @@ static void deep_clean() {
 
 __attribute__((constructor))
 static void init_v12() {
-    deep_clean();
+    reset_account();
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = [[UIApplication sharedApplication] keyWindow];
-        UILongPressGestureRecognizer *hold = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(handleHold:)];
-        hold.numberOfTouchesRequired = 3;
-        hold.minimumPressDuration = 2.0;
-        [win addGestureRecognizer:hold];
+        UILongPressGestureRecognizer *segurar = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(aoSegurar:)];
+        segurar.numberOfTouchesRequired = 3;
+        segurar.minimumPressDuration = 2.0;
+        [win addGestureRecognizer:segurar];
     });
 }
 
-+ (void)handleHold:(UILongPressGestureRecognizer *)sender {
-    if (sender.state == UIGestureRecognizerStateBegan) [self toggle];
++ (void)aoSegurar:(UILongPressGestureRecognizer *)gesto {
+    if (gesto.state == UIGestureRecognizerStateBegan) [self toggle];
 }
 
 + (void)toggle {
@@ -56,8 +55,8 @@ static void init_v12() {
     }
 }
 
-- (instancetype)initWithRect:(CGRect)frame { // Simplificado para build estável
-    self = [super initWithFrame:[[UIScreen mainScreen] bounds]];
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
     if (self) {
         self.itens = @[@"Aimbot Pro", @"ESP Line", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
         
@@ -73,8 +72,8 @@ static void init_v12() {
         _container.center = self.center;
         _container.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.95];
         _container.layer.cornerRadius = 10;
-        _container.layer.borderWidth = 1.5;
         _container.layer.borderColor = [UIColor cyanColor].CGColor;
+        _container.layer.borderWidth = 1.5;
         [self addSubview:_container];
 
         _tabela = [[UITableView alloc] initWithFrame:CGRectMake(10, 40, 430, 180)];
@@ -86,34 +85,38 @@ static void init_v12() {
 
         _fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(50, 230, 350, 30)];
         _fovSlider.minimumValue = 50; _fovSlider.maximumValue = 400;
-        [_fovSlider addTarget:self action:@selector(fovUpdate:) forControlEvents:64];
+        [_fovSlider addTarget:self action:@selector(fovAjuste:) forControlEvents:UIControlEventValueChanged];
         _fovSlider.hidden = YES;
         [_container addSubview:_fovSlider];
     }
     return self;
 }
 
-// Lógica de FOV e Tabela mantida igual para estabilidade
-- (void)fovUpdate:(UISlider *)s {
-    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake(self.bounds.size.width/2, self.bounds.size.height/2) radius:s.value startAngle:0 endAngle:2*M_PI clockwise:YES];
-    _fovCircle.path = p.CGPath;
+- (void)fovAjuste:(UISlider *)sender {
+    float r = sender.value;
+    CGPoint center = CGPointMake(self.bounds.size.width/2, self.bounds.size.height/2);
+    UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:center radius:r startAngle:0 endAngle:2*M_PI clockwise:YES];
+    _fovCircle.path = path.CGPath;
 }
 
 - (void)mudouSwitch:(UISwitch *)sender {
-    if ([self.itens[sender.tag] isEqualToString:@"ATIVAR FOV"]) {
-        _fovCircle.hidden = !sender.on; _fovSlider.hidden = !sender.on;
-        [self fovUpdate:_fovSlider];
+    NSString *opt = self.itens[sender.tag];
+    if ([opt isEqualToString:@"ATIVAR FOV"]) {
+        _fovCircle.hidden = !sender.on;
+        _fovSlider.hidden = !sender.on;
+        [self fovAjuste:_fovSlider];
     }
 }
 
-- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.itens.count; }
-- (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)i {
-    UITableViewCell *c = [t dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:0 reuseIdentifier:@"c"];
+- (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)s { return self.itens.count; }
+- (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
+    UITableViewCell *c = [tv dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"c"];
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.itens[i.row];
+    c.textLabel.text = self.itens[ip.row];
     c.textLabel.textColor = [UIColor whiteColor];
     UISwitch *s = [[UISwitch alloc] init];
-    s.tag = i.row; [s addTarget:self action:@selector(mudouSwitch:) forControlEvents:64];
+    s.tag = ip.row;
+    [s addTarget:self action:@selector(mudouSwitch:) forControlEvents:64];
     c.accessoryView = s;
     return c;
 }
