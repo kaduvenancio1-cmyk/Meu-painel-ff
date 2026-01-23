@@ -8,30 +8,36 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos (Blindado)
+      - name: Setup Theos (Força Bruta)
         run: |
-          # Criamos um local único para NUNCA dar erro 128
+          # Criamos uma pasta com nome único baseado na hora para NUNCA dar erro 128
           THEOS_ID="theos_final_$(date +%s)"
-          export THEOS_PATH="$RUNNER_TEMP/$THEOS_ID"
+          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
           
-          echo "Instalando Theos em local limpo..."
-          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
+          echo "Limpando e instalando em local novo: $THEOS_DIR"
+          rm -rf $THEOS_DIR
           
-          # Em vez de curl (que corrompeu), usamos Git Clone para o SDK
-          # É um pouco mais lento, mas é 100% seguro contra erros de formato
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
+          # Clona o motor básico
+          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
           
-          echo "THEOS=$THEOS_PATH" >> $GITHUB_ENV
+          # Remove a pasta sdks automática que o Theos cria (isso mata o erro 128)
+          rm -rf $THEOS_DIR/sdks
+          
+          # Clona os SDKs oficiais (Método lento mas 100% seguro contra corrupção)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
+          
+          # Salva o caminho para o build
+          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # 'make clean' garante que o arquivo final tenha o tamanho real (30KB+)
+          # 'make clean' é o que faz o arquivo sair de 700 bytes para o tamanho real
           make clean package FINALPACKAGE=1
           
       - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial-Final
+          name: Painel-Oficial-FF
           path: packages/*.deb
