@@ -8,34 +8,35 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos (Absolute Clean)
+      - name: Setup Theos
         run: |
-          # Criamos uma pasta com ID único baseado na hora para NUNCA dar "already exists"
-          THEOS_ID="theos_build_$(date +%s)"
-          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
+          # Define um local limpo no diretório temporário do sistema
+          export THEOS=$RUNNER_TEMP/theos
+          rm -rf $THEOS
           
-          echo "Limpando qualquer rastro anterior..."
-          rm -rf $THEOS_DIR
+          # Clona apenas o motor do Theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
           
-          echo "Instalando Theos em: $THEOS_DIR"
-          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
+          # Baixa o SDK específico (iPhoneOS14.5) diretamente para evitar o Erro 128
+          mkdir -p $THEOS/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/sdk.tar.xz
+          tar -xf $THEOS/sdks/sdk.tar.xz -C $THEOS/sdks/
+          rm $THEOS/sdks/sdk.tar.xz
           
-          echo "Baixando SDKs de forma segura..."
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
-          
-          # Exporta para os próximos passos usarem
-          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
+          # Salva a variável de ambiente para os próximos passos
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
+          # Usa a variável salva no passo anterior
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
           
-          # 'make clean' é obrigatório para não gerar arquivo de 700 bytes
+          # 'make clean' garante que não use restos de builds que falharam
           make clean package FINALPACKAGE=1
           
       - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial-Funcional
+          name: Painel-Final-Instalavel
           path: packages/*.deb
