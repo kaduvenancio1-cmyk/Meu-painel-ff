@@ -1,110 +1,119 @@
 #import <UIKit/UIKit.h>
-#import <QuartzCore/QuartzCore.h>
 
-static bool aim_on = false;
-static bool esp_on = false;
-static float fov_val = 100.0f;
+// Variáveis Globais
+static bool liga_aim = false;
+static bool liga_esp = false;
+static float fov_raio = 100.0f;
 
-@interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, strong) UIView *bg;
-@property (nonatomic, strong) UITableView *tb;
-@property (nonatomic, strong) CAShapeLayer *fovL;
-@property (nonatomic, strong) NSArray *opt;
+@interface RickzzPainel : UIView <UITableViewDelegate, UITableViewDataSource>
+@property (nonatomic, strong) UITableView *tabela;
+@property (nonatomic, strong) NSArray *opcoes;
+@property (nonatomic, strong) CAShapeLayer *camadaFOV;
 @end
 
-@implementation RickzzMenu
+@implementation RickzzPainel
 
 __attribute__((constructor))
-static void start() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(tg:)];
-        t.numberOfTouchesRequired = 3;
-        [w addGestureRecognizer:t];
+static void init_v26() {
+    // Delay de 15 segundos para injetar após o motor gráfico
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        UIWindow *win = [[UIApplication sharedApplication] keyWindow];
+        
+        // GESTO: Toque rápido com 3 dedos (Sem segurar)
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzPainel class] action:@selector(mudarMenu:)];
+        tap.numberOfTouchesRequired = 3;
+        [win addGestureRecognizer:tap];
     });
 }
 
-+ (void)tg:(UITapGestureRecognizer *)g {
++ (void)mudarMenu:(UITapGestureRecognizer *)g {
     if (g.state == UIGestureRecognizerStateEnded) {
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        UIView *v = [w viewWithTag:666];
+        UIView *v = [w viewWithTag:999];
         if (v) v.hidden = !v.hidden;
         else {
-            RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:w.bounds];
-            m.tag = 666; [w addSubview:m];
+            RickzzPainel *m = [[RickzzPainel alloc] initWithFrame:w.bounds];
+            m.tag = 999;
+            [w addSubview:m];
         }
     }
 }
 
-// SOLUÇÃO DO ERRO NS_DESIGNATED_INITIALIZER
+// SOLUÇÃO PARA O ERRO NS_DESIGNATED_INITIALIZER
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.opt = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
+        self.opcoes = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
         
-        // FORÇAR DESENHO DO FOV
-        _fovL = [CAShapeLayer layer];
-        _fovL.strokeColor = [UIColor cyanColor].CGColor;
-        _fovL.fillColor = [UIColor clearColor].CGColor;
-        _fovL.lineWidth = 2.0;
-        _fovL.hidden = YES;
-        [self.layer addSublayer:_fovL];
+        // Camada Visual do FOV
+        _camadaFOV = [CAShapeLayer layer];
+        _camadaFOV.strokeColor = [UIColor cyanColor].CGColor;
+        _camadaFOV.fillColor = [UIColor clearColor].CGColor;
+        _camadaFOV.lineWidth = 2.0;
+        _camadaFOV.hidden = YES;
+        [self.layer addSublayer:_camadaFOV];
 
-        _bg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 390, 260)];
-        _bg.center = self.center;
-        _bg.backgroundColor = [UIColor colorWithWhite:0 alpha:0.98];
-        _bg.layer.cornerRadius = 12;
-        _bg.layer.borderColor = [UIColor cyanColor].CGColor;
-        _bg.layer.borderWidth = 1.5;
-        [self addSubview:_bg];
+        // Design do Painel
+        UIView *fundo = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 380, 260)];
+        fundo.center = self.center;
+        fundo.backgroundColor = [UIColor colorWithWhite:0 alpha:0.98];
+        fundo.layer.cornerRadius = 12;
+        fundo.layer.borderWidth = 1.5;
+        fundo.layer.borderColor = [UIColor cyanColor].CGColor;
+        [self addSubview:fundo];
 
-        // INICIALIZAÇÃO CORRETA DA TABELA
-        _tb = [[UITableView alloc] initWithFrame:CGRectMake(5, 10, 380, 240) style:UITableViewStylePlain];
-        _tb.backgroundColor = [UIColor clearColor];
-        _tb.delegate = self; _tb.dataSource = self;
-        _tb.separatorStyle = UITableViewCellSeparatorStyleNone;
-        [_bg addSubview:_tb];
+        // Tabela corrigida para não dar erro de build
+        _tabela = [[UITableView alloc] initWithFrame:CGRectMake(5, 10, 370, 240) style:UITableViewStylePlain];
+        _tabela.backgroundColor = [UIColor clearColor];
+        _tabela.delegate = self;
+        _tabela.dataSource = self;
+        _tabela.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [fundo addSubview:_tabela];
     }
     return self;
 }
 
-- (void)updF {
-    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:self.center radius:fov_val startAngle:0 endAngle:2*M_PI clockwise:YES];
-    _fovL.path = p.CGPath;
+- (void)desenharFOV {
+    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:self.center radius:fov_raio startAngle:0 endAngle:2*M_PI clockwise:YES];
+    _camadaFOV.path = p.CGPath;
 }
 
-- (void)swChanged:(UISwitch *)s {
-    if (s.tag == 0) aim_on = s.on;
-    if (s.tag == 1) esp_on = s.on;
-    if (s.tag == 7) { _fovL.hidden = !s.on; [self updF]; }
+- (void)swMudou:(UISwitch *)s {
+    if (s.tag == 0) liga_aim = s.on;
+    if (s.tag == 1) liga_esp = s.on;
+    if (s.tag == 7) { 
+        _camadaFOV.hidden = !s.on;
+        [self desenharFOV];
+    }
 }
 
-- (void)slChanged:(UISlider *)sl {
-    fov_val = sl.value; [self updF];
+- (void)slMudou:(UISlider *)sl {
+    fov_raio = sl.value;
+    [self desenharFOV];
 }
 
-- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.opt.count; }
+- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.opcoes.count; }
 
 - (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)p {
-    // CORREÇÃO DEFINITIVA DE CÉLULA PARA O THEOS
-    static NSString *cid = @"cell";
-    UITableViewCell *c = [t dequeueReusableCellWithIdentifier:cid];
-    if (!c) {
-        c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cid];
+    static NSString *cellID = @"id_cell";
+    UITableViewCell *c = [t dequeueReusableCellWithIdentifier:cellID];
+    if (c == nil) {
+        c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
     }
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.opt[p.row];
+    c.textLabel.text = self.opcoes[p.row];
     c.textLabel.textColor = [UIColor whiteColor];
+    c.selectionStyle = UITableViewCellSelectionStyleNone;
 
-    if (p.row == 8) {
+    if (p.row == 8) { // SLIDER
         UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 110, 20)];
-        sl.minimumValue = 50; sl.maximumValue = 350; sl.value = fov_val;
-        [sl addTarget:self action:@selector(slChanged:) forControlEvents:UIControlEventValueChanged];
+        sl.minimumValue = 50; sl.maximumValue = 350; sl.value = fov_raio;
+        [sl addTarget:self action:@selector(slMudou:) forControlEvents:UIControlEventValueChanged];
         c.accessoryView = sl;
     } else {
         UISwitch *sw = [[UISwitch alloc] init];
         sw.tag = p.row;
-        [sw addTarget:self action:@selector(swChanged:) forControlEvents:UIControlEventValueChanged];
+        [sw addTarget:self action:@selector(swMudou:) forControlEvents:UIControlEventValueChanged];
         c.accessoryView = sw;
     }
     return c;
