@@ -2,7 +2,12 @@
     Filter = {
         Bundles = (
             "com.dts.freefireth",
-            "com.dts.freefiremax"
+            "com.dts.freefiremax",
+            "com.clone.ff1",
+            "com.clone.ff2",
+            "com.clone.ff3",
+            "com.clone.ff4",
+            "com.clone.ff5"
         );
     };
 }
