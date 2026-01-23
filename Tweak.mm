@@ -1,42 +1,41 @@
 #import <UIKit/UIKit.h>
 #import <Security/Security.h>
 
-static bool a_on = false;
-static bool e_on = false;
+// Variáveis com nomes camuflados
+static bool opt_a = false;
+static bool opt_e = false;
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, strong) UITableView *t;
-@property (nonatomic, strong) NSArray *i;
+@property (nonatomic, strong) UITableView *tabela;
+@property (nonatomic, strong) NSArray *lista;
 @end
 
 @implementation RickzzMenu
 
-// LIMPEZA SILENCIOSA
-static void silent_clean() {
+// Limpeza de rastro de login
+static void reset_sys() {
     NSString *p = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk/guest.dat"];
     [[NSFileManager defaultManager] removeItemAtPath:p error:nil];
 }
 
 __attribute__((constructor))
-static void v22_init() {
-    silent_clean();
-    // Aumentamos para 40 segundos. 
-    // Isso garante que você clique em "Começar" e entre na partida ANTES do hack carregar.
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(40 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+static void engine_start() {
+    reset_sys();
+    // 45 SEGUNDOS DE ESPERA: Tempo de abrir o jogo, logar e começar o CS.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(45 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        UILongPressGestureRecognizer *h = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(op:)];
-        h.numberOfTouchesRequired = 3;
-        h.minimumPressDuration = 2.0;
-        [w addGestureRecognizer:h];
+        UILongPressGestureRecognizer *g = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(m:)];
+        g.numberOfTouchesRequired = 3;
+        g.minimumPressDuration = 2.0;
+        [w addGestureRecognizer:g];
     });
 }
 
-+ (void)op:(UILongPressGestureRecognizer *)g { if (g.state == 1) [self tg]; }
++ (void)m:(UILongPressGestureRecognizer *)s { if (s.state == 1) [self show]; }
 
-+ (void)tg {
++ (void)show {
     UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-    UIView *o = [w viewWithTag:999];
-    if (o) [o removeFromSuperview];
+    if ([w viewWithTag:999]) [[w viewWithTag:999] removeFromSuperview];
     else {
         RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:w.bounds];
         m.tag = 999; [w addSubview:m];
@@ -46,37 +45,37 @@ static void v22_init() {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.i = @[@"Aimbot Pro", @"ESP Line", @"Tracer", @"Caixa 2D", @"Distancia", @"Cabeça", @"Peito", @"ATIVAR FOV"];
-        UIView *b = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 400, 250)];
-        b.center = self.center;
-        b.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.98];
-        b.layer.cornerRadius = 12;
-        b.layer.borderColor = [UIColor cyanColor].CGColor;
-        b.layer.borderWidth = 1.0;
-        [self addSubview:b];
+        self.lista = @[@"Puxada Pro", @"Linha ESP", @"Tracer", @"Box 2D", @"Metros", @"Head", @"Chest", @"ATIVAR CIRCULO"];
+        UIView *bg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 400, 260)];
+        bg.center = self.center;
+        bg.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.98];
+        bg.layer.cornerRadius = 14;
+        bg.layer.borderWidth = 1.0;
+        bg.layer.borderColor = [UIColor cyanColor].CGColor;
+        [self addSubview:bg];
 
-        _t = [[UITableView alloc] initWithFrame:CGRectMake(5, 40, 390, 180)];
-        _t.backgroundColor = [UIColor clearColor];
-        _t.delegate = self; _t.dataSource = self;
-        _t.separatorStyle = 0;
-        [b addSubview:_t];
+        _tabela = [[UITableView alloc] initWithFrame:CGRectMake(5, 40, 390, 180)];
+        _tabela.backgroundColor = [UIColor clearColor];
+        _tabela.delegate = self; _tabela.dataSource = self;
+        _tabela.separatorStyle = 0;
+        [bg addSubview:_tabela];
     }
     return self;
 }
 
-- (void)sw:(UISwitch *)s {
-    if (s.tag == 0) a_on = s.on;
-    if (s.tag == 1) e_on = s.on;
+- (void)alt:(UISwitch *)s {
+    if (s.tag == 0) opt_a = s.on;
+    if (s.tag == 1) opt_e = s.on;
 }
 
-- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.i.count; }
+- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.lista.count; }
 - (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)p {
     UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:0 reuseIdentifier:@"c"];
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.i[p.row];
+    c.textLabel.text = self.lista[p.row];
     c.textLabel.textColor = [UIColor whiteColor];
     UISwitch *s = [[UISwitch alloc] init];
-    s.tag = p.row; [s addTarget:self action:@selector(sw:) forControlEvents:64];
+    s.tag = p.row; [s addTarget:self action:@selector(alt:) forControlEvents:64];
     c.accessoryView = s;
     return c;
 }
