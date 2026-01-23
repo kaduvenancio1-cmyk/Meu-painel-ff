@@ -10,33 +10,31 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Criamos um local único para evitar qualquer trava de cache do GitHub
-          export THEOS=$RUNNER_TEMP/theos_final
-          rm -rf $THEOS
+          # Criamos um local único no diretório temporário para evitar o erro 128
+          export THEOS_FINAL=$RUNNER_TEMP/theos_projeto
+          rm -rf $THEOS_FINAL
           
-          # 1. Instala o motor do Theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS
+          # Clona o motor principal do Theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS_FINAL
           
-          # 2. Em vez de clonar a pasta 'sdks', vamos entrar nela e baixar o arquivo
-          # Isso evita o erro "already exists" (Erro 128)
-          cd $THEOS/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o sdk.tar.xz
+          # Remove a pasta sdks que o theos cria vazia para evitar conflito
+          rm -rf $THEOS_FINAL/sdks
           
-          # 3. Extrai o SDK (Isolamos o erro de archive format)
-          tar -xf sdk.tar.xz
-          rm sdk.tar.xz
+          # CLONA os SDKs (Dura uns 3-5 minutos, mas NÃO CORROMPE)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_FINAL/sdks
           
-          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          echo "THEOS=$THEOS_FINAL" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # O 'make clean' é vital para o arquivo não vir com 700 bytes
+          
+          # 'make clean' é o segredo para o arquivo pular de 700 bytes para o tamanho real
           make clean package FINALPACKAGE=1
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Funcional-FF
+          name: Painel-Final-FF
           path: packages/*.deb
