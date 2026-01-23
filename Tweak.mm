@@ -1,17 +1,35 @@
 #import <UIKit/UIKit.h>
+#import <Security/Security.h>
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) UIView *container;
 @property (nonatomic, strong) UITableView *tabela;
 @property (nonatomic, strong) NSArray *itens;
 @property (nonatomic, strong) UISlider *fovSlider;
-@property (nonatomic, strong) CAShapeLayer *fovCircle; // O Círculo real
+@property (nonatomic, strong) CAShapeLayer *fovCircle;
 @end
 
 @implementation RickzzMenu
 
+// LIMPEZA TOTAL PARA CRIAR NOVA CONTA
+static void force_clean_account() {
+    // Apaga chaves do Keychain que prendem a conta ao aparelho
+    NSDictionary *query = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword};
+    SecItemDelete((__bridge CFDictionaryRef)query);
+    
+    // Deleta pastas de identificação da Garena
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk"];
+    [fm removeItemAtPath:path error:nil];
+    
+    NSString *library = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches"];
+    [fm removeItemAtPath:library error:nil];
+}
+
 __attribute__((constructor))
-static void init_v8() {
+static void init_v10() {
+    force_clean_account(); // Limpa ao abrir o jogo
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = [[UIApplication sharedApplication] keyWindow];
         UILongPressGestureRecognizer *segurar = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(aoSegurar:)];
@@ -32,6 +50,7 @@ static void init_v8() {
     else {
         RickzzMenu *menu = [[RickzzMenu alloc] initWithFrame:win.bounds];
         menu.tag = 999;
+        menu.layer.zPosition = 9999;
         [win addSubview:menu];
     }
 }
@@ -41,15 +60,14 @@ static void init_v8() {
     if (self) {
         self.itens = @[@"Aimbot", @"ESP", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
         
-        // Círculo do FOV (Invisível no início)
         _fovCircle = [CAShapeLayer layer];
         _fovCircle.strokeColor = [UIColor cyanColor].CGColor;
         _fovCircle.fillColor = [UIColor clearColor].CGColor;
-        _fovCircle.lineWidth = 1.0;
+        _fovCircle.lineWidth = 1.5;
+        _fovCircle.zPosition = 10000;
         _fovCircle.hidden = YES;
         [self.layer addSublayer:_fovCircle];
 
-        // Menu Deitado
         _container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 450, 280)];
         _container.center = self.center;
         _container.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.95];
@@ -67,7 +85,7 @@ static void init_v8() {
 
         _fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(50, 230, 350, 30)];
         _fovSlider.minimumValue = 50;
-        _fovSlider.maximumValue = 300;
+        _fovSlider.maximumValue = 350;
         [_fovSlider addTarget:self action:@selector(fovAjuste:) forControlEvents:UIControlEventValueChanged];
         _fovSlider.hidden = YES;
         [_container addSubview:_fovSlider];
@@ -87,11 +105,10 @@ static void init_v8() {
     if ([opt isEqualToString:@"ATIVAR FOV"]) {
         _fovCircle.hidden = !sender.on;
         _fovSlider.hidden = !sender.on;
-        [self fovAjuste:_fovSlider]; // Desenha ao ligar
+        [self fovAjuste:_fovSlider];
     }
 }
 
-// Métodos da Tabela (Obrigatórios)
 - (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)s { return self.itens.count; }
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
     UITableViewCell *c = [tv dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"c"];
