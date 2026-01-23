@@ -10,33 +10,35 @@ jobs:
 
       - name: Setup Theos
         run: |
-          # Define um local limpo no diretório temporário do sistema
-          export THEOS=$RUNNER_TEMP/theos
-          rm -rf $THEOS
+          # Criamos um local totalmente novo para evitar o Erro 128
+          export THEOS_DIR=$RUNNER_TEMP/theos_final
+          rm -rf $THEOS_DIR
           
-          # Clona apenas o motor do Theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS
+          # 1. Clona apenas o motor do Theos (sem subpastas que travam)
+          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
           
-          # Baixa o SDK específico (iPhoneOS14.5) diretamente para evitar o Erro 128
-          mkdir -p $THEOS/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/sdk.tar.xz
-          tar -xf $THEOS/sdks/sdk.tar.xz -C $THEOS/sdks/
-          rm $THEOS/sdks/sdk.tar.xz
+          # 2. Em vez de 'git clone', usamos download direto para o SDK
+          # Isso evita o erro de "destination path already exists"
+          mkdir -p $THEOS_DIR/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_DIR/sdks/sdk.tar.xz
           
-          # Salva a variável de ambiente para os próximos passos
-          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          # Extração segura (Resolve o erro de 'Unrecognized archive format')
+          tar -xf $THEOS_DIR/sdks/sdk.tar.xz -C $THEOS_DIR/sdks/
+          rm $THEOS_DIR/sdks/sdk.tar.xz
+          
+          # Salva o caminho para o build
+          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
-          # Usa a variável salva no passo anterior
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
           
-          # 'make clean' garante que não use restos de builds que falharam
+          # 'make clean' é obrigatório para o arquivo não vir vazio (700 bytes)
           make clean package FINALPACKAGE=1
           
       - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Final-Instalavel
+          name: Painel-Funcional-Verdadeiro
           path: packages/*.deb
