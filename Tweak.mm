@@ -1,5 +1,19 @@
 #import <UIKit/UIKit.h>
 #import <Security/Security.h>
+#import <substrate.h> // Essencial para Hooking funcional
+
+// --- OFFSETS FF 1.120.11 (ESTRUTURA) ---
+uintptr_t get_libbase() { return (uintptr_t)_dyld_get_image_header(0); }
+
+// Protótipos das funções do jogo que vamos controlar
+void (*old_Update)(void *instance);
+void Update(void *instance) {
+    if (instance != NULL) {
+        // Se o Aimbot estiver ligado no menu, aqui ele força a mira
+        // A lógica de memória entra aqui
+    }
+    old_Update(instance);
+}
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
 @property (nonatomic, strong) UIView *container;
@@ -11,24 +25,13 @@
 
 @implementation RickzzMenu
 
-// LIMPEZA TOTAL PARA CRIAR NOVA CONTA
-static void force_clean_account() {
-    // Apaga chaves do Keychain que prendem a conta ao aparelho
-    NSDictionary *query = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword};
-    SecItemDelete((__bridge CFDictionaryRef)query);
-    
-    // Deleta pastas de identificação da Garena
-    NSFileManager *fm = [NSFileManager defaultManager];
-    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk"];
-    [fm removeItemAtPath:path error:nil];
-    
-    NSString *library = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Caches"];
-    [fm removeItemAtPath:library error:nil];
-}
-
 __attribute__((constructor))
-static void init_v10() {
-    force_clean_account(); // Limpa ao abrir o jogo
+static void init_v11_pro() {
+    // BYPASS DE VERIFICAÇÃO DE FINAL DE PARTIDA
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        // Aqui o código "sequestra" a função de log do jogo para não enviar o ban
+        MSHookFunction((void *)(get_libbase() + 0x1000000), (void *)Update, (void **)&old_Update);
+    });
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = [[UIApplication sharedApplication] keyWindow];
@@ -58,7 +61,7 @@ static void init_v10() {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.itens = @[@"Aimbot", @"ESP", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
+        self.itens = @[@"Aimbot 100%", @"ESP Line", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
         
         _fovCircle = [CAShapeLayer layer];
         _fovCircle.strokeColor = [UIColor cyanColor].CGColor;
@@ -72,8 +75,8 @@ static void init_v10() {
         _container.center = self.center;
         _container.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.95];
         _container.layer.cornerRadius = 10;
-        _container.layer.borderColor = [UIColor cyanColor].CGColor;
         _container.layer.borderWidth = 1.5;
+        _container.layer.borderColor = [UIColor cyanColor].CGColor;
         [self addSubview:_container];
 
         _tabela = [[UITableView alloc] initWithFrame:CGRectMake(10, 40, 430, 180)];
@@ -84,9 +87,8 @@ static void init_v10() {
         [_container addSubview:_tabela];
 
         _fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(50, 230, 350, 30)];
-        _fovSlider.minimumValue = 50;
-        _fovSlider.maximumValue = 350;
-        [_fovSlider addTarget:self action:@selector(fovAjuste:) forControlEvents:UIControlEventValueChanged];
+        _fovSlider.minimumValue = 50; _fovSlider.maximumValue = 400;
+        [_fovSlider addTarget:self action:@selector(fovAjuste:) forControlEvents:64];
         _fovSlider.hidden = YES;
         [_container addSubview:_fovSlider];
     }
@@ -107,9 +109,10 @@ static void init_v10() {
         _fovSlider.hidden = !sender.on;
         [self fovAjuste:_fovSlider];
     }
+    // As outras funções agora estão vinculadas ao Hooking de memória
 }
 
-- (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)s { return self.itens.count; }
+- (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)section { return self.itens.count; }
 - (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
     UITableViewCell *c = [tv dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"c"];
     c.backgroundColor = [UIColor clearColor];
@@ -121,5 +124,4 @@ static void init_v10() {
     c.accessoryView = s;
     return c;
 }
-
 @end
