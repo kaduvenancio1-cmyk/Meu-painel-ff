@@ -8,37 +8,33 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos
+      - name: Setup Theos (Absolute Clean)
         run: |
-          # Criamos um local totalmente novo para evitar o Erro 128
-          export THEOS_DIR=$RUNNER_TEMP/theos_final
+          # Gera um nome de pasta único baseado nos segundos atuais
+          THEOS_ID="theos_$(date +%s)"
+          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
+          
+          echo "Limpando e instalando em: $THEOS_DIR"
           rm -rf $THEOS_DIR
           
-          # 1. Clona apenas o motor do Theos (sem subpastas que travam)
+          # Clona o motor principal
           git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
           
-          # 2. Em vez de 'git clone', usamos download direto para o SDK
-          # Isso evita o erro de "destination path already exists"
-          mkdir -p $THEOS_DIR/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS_DIR/sdks/sdk.tar.xz
+          # Clona os SDKs (Método seguro contra arquivos corrompidos)
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
           
-          # Extração segura (Resolve o erro de 'Unrecognized archive format')
-          tar -xf $THEOS_DIR/sdks/sdk.tar.xz -C $THEOS_DIR/sdks/
-          rm $THEOS_DIR/sdks/sdk.tar.xz
-          
-          # Salva o caminho para o build
+          # Salva o caminho para o próximo passo
           echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          
-          # 'make clean' é obrigatório para o arquivo não vir vazio (700 bytes)
+          # 'make clean' garante que o arquivo final não venha vazio (700 bytes)
           make clean package FINALPACKAGE=1
           
       - name: Upload Finished DEB
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Funcional-Verdadeiro
+          name: Painel-Oficial-FF
           path: packages/*.deb
