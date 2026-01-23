@@ -8,33 +8,30 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
+      - name: Install Dependencies
+        run: |
+          # Instala o ldid e outras ferramentas de assinatura necessárias
+          brew install ldid xz
+
       - name: Setup Theos
         run: |
-          # Criamos um local único no diretório temporário para evitar o erro 128
-          export THEOS_FINAL=$RUNNER_TEMP/theos_projeto
-          rm -rf $THEOS_FINAL
-          
-          # Clona o motor principal do Theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS_FINAL
-          
-          # Remove a pasta sdks que o theos cria vazia para evitar conflito
-          rm -rf $THEOS_FINAL/sdks
-          
-          # CLONA os SDKs (Dura uns 3-5 minutos, mas NÃO CORROMPE)
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_FINAL/sdks
-          
-          echo "THEOS=$THEOS_FINAL" >> $GITHUB_ENV
+          export THEOS_PATH="$RUNNER_TEMP/theos_final"
+          rm -rf $THEOS_PATH
+          git clone --recursive https://github.com/theos/theos.git $THEOS_PATH
+          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_PATH/sdks
+          echo "THEOS=$THEOS_PATH" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
+          # Adiciona o caminho das ferramentas instaladas ao sistema
+          export PATH="/usr/local/bin:$PATH"
           chmod -R +x $THEOS/bin
           
-          # 'make clean' é o segredo para o arquivo pular de 700 bytes para o tamanho real
           make clean package FINALPACKAGE=1
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Final-FF
+          name: Painel-Final-Pronto
           path: packages/*.deb
