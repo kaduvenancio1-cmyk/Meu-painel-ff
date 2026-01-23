@@ -8,36 +8,35 @@ jobs:
       - name: Checkout Project
         uses: actions/checkout@v4
 
-      - name: Setup Theos (Força Bruta)
+      - name: Setup Theos
         run: |
-          # Criamos uma pasta com nome único baseado na hora para NUNCA dar erro 128
-          THEOS_ID="theos_final_$(date +%s)"
-          export THEOS_DIR="$RUNNER_TEMP/$THEOS_ID"
+          # Criamos um local único para evitar qualquer trava de cache do GitHub
+          export THEOS=$RUNNER_TEMP/theos_final
+          rm -rf $THEOS
           
-          echo "Limpando e instalando em local novo: $THEOS_DIR"
-          rm -rf $THEOS_DIR
+          # 1. Instala o motor do Theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
           
-          # Clona o motor básico
-          git clone --recursive https://github.com/theos/theos.git $THEOS_DIR
+          # 2. Em vez de clonar a pasta 'sdks', vamos entrar nela e baixar o arquivo
+          # Isso evita o erro "already exists" (Erro 128)
+          cd $THEOS/sdks
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o sdk.tar.xz
           
-          # Remove a pasta sdks automática que o Theos cria (isso mata o erro 128)
-          rm -rf $THEOS_DIR/sdks
+          # 3. Extrai o SDK (Isolamos o erro de archive format)
+          tar -xf sdk.tar.xz
+          rm sdk.tar.xz
           
-          # Clona os SDKs oficiais (Método lento mas 100% seguro contra corrupção)
-          git clone --depth 1 https://github.com/theos/sdks.git $THEOS_DIR/sdks
-          
-          # Salva o caminho para o build
-          echo "THEOS=$THEOS_DIR" >> $GITHUB_ENV
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
 
       - name: Build Package
         run: |
           export THEOS=${{ env.THEOS }}
           chmod -R +x $THEOS/bin
-          # 'make clean' é o que faz o arquivo sair de 700 bytes para o tamanho real
+          # O 'make clean' é vital para o arquivo não vir com 700 bytes
           make clean package FINALPACKAGE=1
           
-      - name: Upload Finished DEB
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Oficial-FF
+          name: Painel-Funcional-FF
           path: packages/*.deb
