@@ -1,9 +1,9 @@
-Package: com.rickzz.bypass
-Name: SystemData
+Package: com.seu.painelff
+Name: Painel FF Clone
 Depends: mobilesubstrate
 Version: 1.0.0
 Architecture: iphoneos-arm
-Description: Sistema de Protecao Rickzz V3
-Maintainer: Rickzz
-Author: Rickzz
+Description: Menu Injetavel para FF
+Maintainer: SeuNome
+Author: SeuNome
 Section: Tweaks
