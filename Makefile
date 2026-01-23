@@ -6,7 +6,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Painel
 
-# ATENÇÃO: Se o arquivo é Tweak.mm, aqui DEVE ser Tweak.mm
+# O nome abaixo deve ser EXATAMENTE Tweak.mm (com T maiúsculo)
 Painel_FILES = Tweak.mm
 Painel_FRAMEWORKS = UIKit Foundation Security QuartzCore
 Painel_CFLAGS = -fobjc-arc
