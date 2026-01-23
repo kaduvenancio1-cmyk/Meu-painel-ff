@@ -1,18 +1,11 @@
 #import <UIKit/UIKit.h>
 #import <Security/Security.h>
-#import <substrate.h> // Essencial para Hooking funcional
+#import <mach-o/dyld.h> // ADICIONADO PARA CORRIGIR O ERRO DO PRINT
+#import <substrate.h>
 
-// --- OFFSETS FF 1.120.11 (ESTRUTURA) ---
-uintptr_t get_libbase() { return (uintptr_t)_dyld_get_image_header(0); }
-
-// Protótipos das funções do jogo que vamos controlar
-void (*old_Update)(void *instance);
-void Update(void *instance) {
-    if (instance != NULL) {
-        // Se o Aimbot estiver ligado no menu, aqui ele força a mira
-        // A lógica de memória entra aqui
-    }
-    old_Update(instance);
+// --- BUSCA DA BASE DO JOGO ---
+uintptr_t get_base_address() {
+    return (uintptr_t)_dyld_get_image_header(0);
 }
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
@@ -25,25 +18,30 @@ void Update(void *instance) {
 
 @implementation RickzzMenu
 
+// LIMPEZA DE CONTA AO INICIAR (GUEST RESET)
+static void deep_clean() {
+    NSString *path = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk/guest.dat"];
+    [[NSFileManager defaultManager] removeItemAtPath:path error:nil];
+    
+    NSDictionary *query = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword};
+    SecItemDelete((__bridge CFDictionaryRef)query);
+}
+
 __attribute__((constructor))
-static void init_v11_pro() {
-    // BYPASS DE VERIFICAÇÃO DE FINAL DE PARTIDA
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        // Aqui o código "sequestra" a função de log do jogo para não enviar o ban
-        MSHookFunction((void *)(get_libbase() + 0x1000000), (void *)Update, (void **)&old_Update);
-    });
+static void init_v12() {
+    deep_clean();
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = [[UIApplication sharedApplication] keyWindow];
-        UILongPressGestureRecognizer *segurar = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(aoSegurar:)];
-        segurar.numberOfTouchesRequired = 3;
-        segurar.minimumPressDuration = 2.0;
-        [win addGestureRecognizer:segurar];
+        UILongPressGestureRecognizer *hold = [[UILongPressGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(handleHold:)];
+        hold.numberOfTouchesRequired = 3;
+        hold.minimumPressDuration = 2.0;
+        [win addGestureRecognizer:hold];
     });
 }
 
-+ (void)aoSegurar:(UILongPressGestureRecognizer *)gesto {
-    if (gesto.state == UIGestureRecognizerStateBegan) [self toggle];
++ (void)handleHold:(UILongPressGestureRecognizer *)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) [self toggle];
 }
 
 + (void)toggle {
@@ -58,10 +56,10 @@ static void init_v11_pro() {
     }
 }
 
-- (instancetype)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:frame];
+- (instancetype)initWithRect:(CGRect)frame { // Simplificado para build estável
+    self = [super initWithFrame:[[UIScreen mainScreen] bounds]];
     if (self) {
-        self.itens = @[@"Aimbot 100%", @"ESP Line", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
+        self.itens = @[@"Aimbot Pro", @"ESP Line", @"Tracer", @"Skeleton", @"Distancia", @"Caixa 2D", @"Cabeça", @"Peito", @"Alerta Spect", @"Anti-Screenshot", @"Modo Streamer", @"ATIVAR FOV"];
         
         _fovCircle = [CAShapeLayer layer];
         _fovCircle.strokeColor = [UIColor cyanColor].CGColor;
@@ -88,39 +86,34 @@ static void init_v11_pro() {
 
         _fovSlider = [[UISlider alloc] initWithFrame:CGRectMake(50, 230, 350, 30)];
         _fovSlider.minimumValue = 50; _fovSlider.maximumValue = 400;
-        [_fovSlider addTarget:self action:@selector(fovAjuste:) forControlEvents:64];
+        [_fovSlider addTarget:self action:@selector(fovUpdate:) forControlEvents:64];
         _fovSlider.hidden = YES;
         [_container addSubview:_fovSlider];
     }
     return self;
 }
 
-- (void)fovAjuste:(UISlider *)sender {
-    float r = sender.value;
-    CGPoint center = CGPointMake(self.bounds.size.width/2, self.bounds.size.height/2);
-    UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:center radius:r startAngle:0 endAngle:2*M_PI clockwise:YES];
-    _fovCircle.path = path.CGPath;
+// Lógica de FOV e Tabela mantida igual para estabilidade
+- (void)fovUpdate:(UISlider *)s {
+    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:CGPointMake(self.bounds.size.width/2, self.bounds.size.height/2) radius:s.value startAngle:0 endAngle:2*M_PI clockwise:YES];
+    _fovCircle.path = p.CGPath;
 }
 
 - (void)mudouSwitch:(UISwitch *)sender {
-    NSString *opt = self.itens[sender.tag];
-    if ([opt isEqualToString:@"ATIVAR FOV"]) {
-        _fovCircle.hidden = !sender.on;
-        _fovSlider.hidden = !sender.on;
-        [self fovAjuste:_fovSlider];
+    if ([self.itens[sender.tag] isEqualToString:@"ATIVAR FOV"]) {
+        _fovCircle.hidden = !sender.on; _fovSlider.hidden = !sender.on;
+        [self fovUpdate:_fovSlider];
     }
-    // As outras funções agora estão vinculadas ao Hooking de memória
 }
 
-- (NSInteger)tableView:(UITableView *)tv numberOfRowsInSection:(NSInteger)section { return self.itens.count; }
-- (UITableViewCell *)tableView:(UITableView *)tv cellForRowAtIndexPath:(NSIndexPath *)ip {
-    UITableViewCell *c = [tv dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"c"];
+- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.itens.count; }
+- (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)i {
+    UITableViewCell *c = [t dequeueReusableCellWithIdentifier:@"c"] ?: [[UITableViewCell alloc] initWithStyle:0 reuseIdentifier:@"c"];
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.itens[ip.row];
+    c.textLabel.text = self.itens[i.row];
     c.textLabel.textColor = [UIColor whiteColor];
     UISwitch *s = [[UISwitch alloc] init];
-    s.tag = ip.row;
-    [s addTarget:self action:@selector(mudouSwitch:) forControlEvents:64];
+    s.tag = i.row; [s addTarget:self action:@selector(mudouSwitch:) forControlEvents:64];
     c.accessoryView = s;
     return c;
 }
