@@ -1,15 +1,15 @@
-ARCHS = arm64
-TARGET = iphone:clang:latest:14.0
+ARCHS = arm64 arm64e
 DEBUG = 0
 FINALPACKAGE = 1
+FOR_RELEASE = 1
 
 include $(THEOS)/makefiles/common.mk
 
-TweakName = SystemData
+TWEAK_NAME = Painel
 
-# Isso aqui é o que faz o arquivo ganhar peso e ter o código dentro
-SystemData_FILES = Tweak.mm
-SystemData_FRAMEWORKS = UIKit Security CoreGraphics QuartzCore Foundation
-SystemData_CFLAGS = -fobjc-arc
+# O NOME DO ARQUIVO ABAIXO DEVE SER tweak.mm
+Painel_FILES = tweak.mm
+Painel_FRAMEWORKS = UIKit Foundation Security QuartzCore CoreGraphics
+Painel_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
