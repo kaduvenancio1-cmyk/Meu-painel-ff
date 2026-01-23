@@ -2,32 +2,25 @@
 #import <Security/Security.h>
 #import <Foundation/Foundation.h>
 
-// --- BLOCO DE SEGURANÇA (ESTRUTURA DE DADOS REFORÇADA) ---
-static char const *security_layer = "ANTIBAN_V4_STABLE_ENCRYPTED_SESSION_KEY_0x99283";
-int padding_buffer[10000] = {0}; 
-
 @interface RickzzMenu : UIView
 @property (nonatomic, strong) UIButton *btn;
 @end
 
 @implementation RickzzMenu
 
-// 1. INJEÇÃO SEGURA COM DELAY
+// INJEÇÃO SEGURA
 __attribute__((constructor))
 static void init_rickzz() {
-    NSLog(@"[Rickzz] Iniciando Bypass V4...");
-
-    // Limpeza silenciosa de rastros no início para evitar ban por ID antigo
+    // Limpeza de rastros ao iniciar
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSDictionary *spec = @{(__bridge id)kSecClass: (__bridge id)kSecClassGenericPassword};
         SecItemDelete((__bridge CFDictionaryRef)spec);
         
         NSString *msdk = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/com.garena.msdk"];
         [[NSFileManager defaultManager] removeItemAtPath:msdk error:nil];
-        NSLog(@"[Rickzz] Limpeza de entrada concluída.");
     });
 
-    // Só ativa o menu após 20 segundos (tempo de passar pela tela de logo)
+    // Ativa o menu após 20 segundos para evitar o ban de 3 segundos
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(20 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = nil;
         if (@available(iOS 13.0, *)) {
@@ -41,10 +34,11 @@ static void init_rickzz() {
             win = [[UIApplication sharedApplication] keyWindow];
         }
 
-        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(toggle)];
-        tap.numberOfTouchesRequired = 3;
-        [win addGestureRecognizer:tap];
-        NSLog(@"[Rickzz] Menu pronto! Use 3 toques.");
+        if (win) {
+            UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(toggle)];
+            tap.numberOfTouchesRequired = 3;
+            [win addGestureRecognizer:tap];
+        }
     });
 }
 
@@ -64,7 +58,7 @@ static void init_rickzz() {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.92];
+        self.backgroundColor = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.9];
         self.layer.cornerRadius = 15;
         self.layer.borderWidth = 1.5;
         self.layer.borderColor = [UIColor cyanColor].CGColor;
@@ -78,18 +72,10 @@ static void init_rickzz() {
 
         _btn = [UIButton buttonWithType:UIButtonTypeCustom];
         _btn.frame = CGRectMake(40, 70, 240, 50);
-        _btn.backgroundColor = [UIColor colorWithRed:0.1 green:0.1 blue:0.1 alpha:1.0];
+        _btn.backgroundColor = [UIColor colorWithWhite:0.1 alpha:1.0];
         _btn.layer.cornerRadius = 10;
-        [_btn setTitle:@"SISTEMA ATIVO (ANTI-BAN)" forState:0];
-        [_btn setTitleColor:[UIColor whiteColor] forState:0];
+        [_btn setTitle:@"PROTEÇÃO ATIVA" forState:0];
         [self addSubview:_btn];
-
-        UILabel *foot = [[UILabel alloc] initWithFrame:CGRectMake(0, 170, 320, 20)];
-        foot.text = @"STATUS: PROTEGIDO";
-        foot.textColor = [UIColor grayColor];
-        foot.textAlignment = NSTextAlignmentCenter;
-        foot.font = [UIFont systemFontOfSize:9];
-        [self addSubview:foot];
     }
     return self;
 }
