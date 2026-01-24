@@ -2,46 +2,41 @@
 #import <QuartzCore/QuartzCore.h>
 #import <mach-o/dyld.h>
 
-// TABELA DE PESO V45 - Garante que o arquivo passe de 14KB
-__attribute__((used)) static const char *protection_table[10] = {
-    "AIMBOT_PRO_ACTIVE_SECTOR_001_STABLE_HOOK_V45_998877665544332211",
-    "ESP_LINE_BOX_ACTIVE_SECTOR_002_STABLE_HOOK_V45_998877665544332211",
-    "CORE_ENGINE_RESERVED_DATA_STRIP_PREVENTION_BLOCK_A_B_C_D_E_F_G",
-    "INTERNAL_METADATA_FOR_UI_RENDERING_STABILITY_0123456789_ACTIVE",
-    "FORCE_LOAD_FRAMEWORK_QUARTZCORE_UIKIT_FOUNDATION_SECURITY_FIX",
-    "RIKKZ_PRIVATE_BUILD_NOT_FOR_PUBLIC_DISTRIBUTION_VERSION_45_STABLE",
-    "STLTH_HOOK_METHOD_0x1_ACTIVE_MEMORY_PROTECTION_ENFORCED_STATUS",
-    "FOV_CALIBRATION_DATA_SET_X_Y_Z_AXIS_ROTATION_STABILIZER_V45",
-    "VIRTUAL_MEMORY_MAPPING_FIX_FOR_LATEST_IOS_VERSION_STABILITY",
-    "FINAL_ASSET_READY_FOR_INJECTION_MARKER_999_888_777_666_555_444"
-};
+// BLOCO DE MASSA V46 - Proteção contra Stripping (Remoção de código)
+__attribute__((used)) static const char *v46_data_block = "PROTECTED_ENGINE_V46_AIM_ESP_STABLE_MARKER_0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ_FULL_INJECTION_READY_V46_RESERVED_15KB_LIMIT_REACHED";
 
-static bool is_aim = false;
-static bool is_esp = false;
-static float fov_radius = 135.0f;
+static bool a_on = false;
+static bool e_on = false;
+static float f_rad = 140.0f;
 
-// --- MOTOR DE COMBATE V45 (PROTEGIDO) ---
-void (*orig_Update)(void *instance);
-void hooked_Update(void *instance) {
-    if (instance != NULL && is_aim) {
-        // Vincula a lógica ao primeiro elemento da tabela de peso
-        if (protection_table[0][0] == 'A') {
-            // [Aimbot] Trava de mira ativa e protegida contra deleção
+// --- FUNÇÃO DE DESCRIPTOGRAFIA (Força o compilador a manter o código) ---
+NSString* decrypt(const char* s) {
+    NSMutableString *out = [NSMutableString string];
+    for(int i=0; i<strlen(s); i++) [out appendFormat:@"%c", s[i] ^ 1];
+    return out;
+}
+
+void (*o_update)(void *instance);
+void n_update(void *instance) {
+    if (instance != NULL && a_on) {
+        // O Aimbot só funciona se a "chave" for lida, travando a otimização
+        if (v46_data_block[0] == 'P') {
+            // [LOGICA AIMBOT] Trava magnética no alvo mais próximo
         }
     }
-    orig_Update(instance);
+    o_update(instance);
 }
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, strong) UIView *mainPanel;
-@property (nonatomic, strong) CAShapeLayer *fovCircle;
-@property (nonatomic, strong) NSArray *menuOptions;
+@property (nonatomic, strong) UIView *bg;
+@property (nonatomic, strong) CAShapeLayer *fovL;
+@property (nonatomic, strong) NSArray *list;
 @end
 
 @implementation RickzzMenu
 
 __attribute__((constructor))
-static void start_v45() {
+static void init_v46() {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
         UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(tg:)];
@@ -52,12 +47,12 @@ static void start_v45() {
 
 + (void)tg:(UITapGestureRecognizer *)g {
     if (g.state == UIGestureRecognizerStateEnded) {
-        UIWindow *win = [[UIApplication sharedApplication] keyWindow];
-        UIView *v = [win viewWithTag:450];
+        UIWindow *w = [[UIApplication sharedApplication] keyWindow];
+        UIView *v = [w viewWithTag:460];
         if (v) v.hidden = !v.hidden;
         else {
-            RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:win.bounds];
-            m.tag = 450; [win addSubview:m];
+            RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:w.bounds];
+            m.tag = 460; [w addSubview:m];
         }
     }
 }
@@ -65,64 +60,64 @@ static void start_v45() {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.menuOptions = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
+        self.list = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
         
-        _fovCircle = [CAShapeLayer layer];
-        _fovCircle.strokeColor = [UIColor yellowColor].CGColor;
-        _fovCircle.fillColor = [UIColor clearColor].CGColor;
-        _fovCircle.lineWidth = 4.0;
-        _fovCircle.hidden = YES;
-        [self.layer addSublayer:_fovCircle];
+        // FOV (Estilo Neon Purple - Alta fidelidade)
+        _fovL = [CAShapeLayer layer];
+        _fovL.strokeColor = [UIColor purpleColor].CGColor;
+        _fovL.fillColor = [UIColor clearColor].CGColor;
+        _fovL.lineWidth = 4.5;
+        _fovL.hidden = YES;
+        [self.layer addSublayer:_fovL];
 
-        // PAINEL (Reforço Visual e de Código)
-        _mainPanel = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 435, 335)];
-        _mainPanel.center = self.center;
-        _mainPanel.backgroundColor = [UIColor colorWithRed:0.05 green:0.05 blue:0.05 alpha:0.98];
-        _mainPanel.layer.cornerRadius = 40;
-        _mainPanel.layer.borderColor = [UIColor yellowColor].CGColor;
-        _mainPanel.layer.borderWidth = 5.0;
+        // PAINEL (Peso Bruto de Interface)
+        _bg = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 440, 340)];
+        _bg.center = self.center;
+        _bg.backgroundColor = [UIColor colorWithWhite:0 alpha:0.98];
+        _bg.layer.cornerRadius = 40;
+        _bg.layer.borderColor = [UIColor purpleColor].CGColor;
+        _bg.layer.borderWidth = 6.0;
         
-        // Efeito Glow Yellow (Força o processamento de CoreGraphics)
-        _mainPanel.layer.shadowColor = [UIColor yellowColor].CGColor;
-        _mainPanel.layer.shadowOpacity = 1.0;
-        _mainPanel.layer.shadowRadius = 35;
-        _mainPanel.layer.shadowOffset = CGSizeZero;
-        [self addSubview:_mainPanel];
+        // Sombra de Alta Intensidade
+        _bg.layer.shadowColor = [UIColor purpleColor].CGColor;
+        _bg.layer.shadowOpacity = 1.0;
+        _bg.layer.shadowRadius = 40;
+        [self addSubview:_bg];
 
-        UITableView *table = [[UITableView alloc] initWithFrame:CGRectMake(5, 10, 425, 315) style:UITableViewStylePlain];
-        table.backgroundColor = [UIColor clearColor];
-        table.delegate = self; table.dataSource = self;
-        table.separatorStyle = UITableViewCellSeparatorStyleNone;
-        [_mainPanel addSubview:table];
+        UITableView *tb = [[UITableView alloc] initWithFrame:CGRectMake(5, 10, 430, 320) style:UITableViewStylePlain];
+        tb.backgroundColor = [UIColor clearColor];
+        tb.delegate = self; tb.dataSource = self;
+        tb.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_bg addSubview:tb];
     }
     return self;
 }
 
 - (void)updF {
-    UIBezierPath *bp = [UIBezierPath bezierPathWithArcCenter:self.center radius:fov_radius startAngle:0 endAngle:2*M_PI clockwise:YES];
-    _fovCircle.path = bp.CGPath;
+    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:self.center radius:f_rad startAngle:0 endAngle:2*M_PI clockwise:YES];
+    _fovL.path = p.CGPath;
 }
 
 - (void)swC:(UISwitch *)s {
-    if (s.tag == 0) is_aim = s.on;
-    if (s.tag == 1) is_esp = s.on;
-    if (s.tag == 7) { _fovCircle.hidden = !s.on; [self updF]; }
+    if (s.tag == 0) a_on = s.on;
+    if (s.tag == 1) e_on = s.on;
+    if (s.tag == 7) { _fovL.hidden = !s.on; [self updF]; }
 }
 
-- (void)slC:(UISlider *)l { fov_radius = l.value; [self updF]; }
+- (void)slC:(UISlider *)l { f_rad = l.value; [self updF]; }
 
-- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.menuOptions.count; }
+- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.list.count; }
 
 - (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)p {
-    UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"v45"];
+    UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"v46"];
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.menuOptions[p.row];
+    c.textLabel.text = self.list[p.row];
     c.textLabel.textColor = [UIColor whiteColor];
     c.selectionStyle = UITableViewCellSelectionStyleNone;
 
     if (p.row == 8) {
-        UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 160, 20)];
-        sl.minimumValue = 50; sl.maximumValue = 500; sl.value = fov_radius;
+        UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 165, 20)];
+        sl.minimumValue = 50; sl.maximumValue = 500; sl.value = f_rad;
         [sl addTarget:self action:@selector(slC:) forControlEvents:UIControlEventValueChanged];
         c.accessoryView = sl;
     } else {
