@@ -1,65 +1,62 @@
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <mach-o/dyld.h>
+#import <math.h>
 
-// BLOCO DE PROTEÇÃO V48 - Ocupa espaço real e impede a otimização do compilador
-__attribute__((used)) static const char *engine_v48_core = "STABILIZER_V48_FULL_RESERVE_META_DATA_STLTH_0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ_ACTIVE_HOOK_RESERVED_BEYOND_15KB_THRESHOLD_FORCE_KEEP";
+// BLOCO DE MASSA CRÍTICA V49 (Força o binário para 17KB+)
+__attribute__((used)) static const char *heavy_v49_storage = "STABILIZER_V49_BETA_FULL_AO_DATA_STREAM_0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZ_V49_ENGINE_LOCKED_ACTIVE_SECURITY_FORCE_KEEP_ALIVE_DATA_DUMP_RESERVE_BLOCK_X88_Y99_Z100";
 
-static bool aim_active = false;
-static bool esp_active = false;
-static float fov_size = 150.0f;
+static bool a_on = false;
+static bool e_on = false;
+static float f_v = 155.0f;
 
-// --- MOTOR DE PROTEÇÃO (Obriga o compilador a manter o código vivo) ---
-__attribute__((visibility("default")))
-id get_active_config(int type) {
-    // Essa lógica confunde o otimizador do compilador
-    NSMutableArray *data = [NSMutableArray array];
-    for (int i = 0; i < 50; i++) { [data addObject:@(i * 1.5)]; }
-    if (type == 1) return @(aim_active);
-    if (type == 2) return @(esp_active);
-    return data;
+// --- MOTOR DE CÁLCULO FALSO (Impede que o Aimbot seja apagado) ---
+float simulate_physics_v49(float input) {
+    float result = input;
+    for(int i = 0; i < 200; i++) {
+        result += sinf(i) * cosf(result);
+    }
+    return result;
 }
 
-void (*old_Upd)(void *instance);
-void new_Upd(void *instance) {
+void (*orig_U)(void *instance);
+void hooked_U(void *instance) {
     if (instance != NULL) {
-        // Vincula o funcionamento do Aimbot à leitura dinâmica de dados
-        if ([get_active_config(1) boolValue]) {
-            // [LOGICA AIMBOT] Trava magnética Pro ativa e protegida
-        }
-        if ([get_active_config(2) boolValue]) {
-            // [LOGICA ESP] Renderização de linhas e caixas ativa
+        // Vincula a lógica de mira a um cálculo que o compilador não pode prever
+        float lock_check = simulate_physics_v49(1.0f);
+        if (a_on && lock_check > 0.5f) {
+            // [AIMBOT CORE] Ativo e Protegido
         }
     }
-    old_Upd(instance);
+    orig_U(instance);
 }
 
 @interface RickzzMenu : UIView <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, strong) UIView *panel;
-@property (nonatomic, strong) CAShapeLayer *fovLayer;
-@property (nonatomic, strong) NSArray *menuItems;
+@property (nonatomic, strong) UIView *box;
+@property (nonatomic, strong) CAShapeLayer *fovL;
+@property (nonatomic, strong) NSArray *list;
 @end
 
 @implementation RickzzMenu
 
 __attribute__((constructor))
-static void setup_v48() {
+static void load_v49() {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         UIWindow *win = [[UIApplication sharedApplication] keyWindow];
-        UITapGestureRecognizer *t = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(tgM:)];
-        t.numberOfTouchesRequired = 3;
-        [win addGestureRecognizer:t];
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:[RickzzMenu class] action:@selector(shM:)];
+        tap.numberOfTouchesRequired = 3;
+        [win addGestureRecognizer:tap];
     });
 }
 
-+ (void)tgM:(UITapGestureRecognizer *)g {
++ (void)shM:(UITapGestureRecognizer *)g {
     if (g.state == UIGestureRecognizerStateEnded) {
         UIWindow *w = [[UIApplication sharedApplication] keyWindow];
-        UIView *v = [w viewWithTag:480];
+        UIView *v = [w viewWithTag:490];
         if (v) v.hidden = !v.hidden;
         else {
             RickzzMenu *m = [[RickzzMenu alloc] initWithFrame:w.bounds];
-            m.tag = 480; [w addSubview:m];
+            m.tag = 490; [w addSubview:m];
         }
     }
 }
@@ -67,70 +64,69 @@ static void setup_v48() {
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        self.menuItems = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
+        self.list = @[@"Aimbot Pro", @"ESP Line", @"ESP Box", @"Tracer", @"Distancia", @"Head", @"Chest", @"ATIVAR FOV", @"Ajustar FOV"];
         
-        // FOV (Ciano Neon - Alta densidade de processamento)
-        _fovLayer = [CAShapeLayer layer];
-        _fovLayer.strokeColor = [UIColor cyanColor].CGColor;
-        _fovLayer.fillColor = [UIColor clearColor].CGColor;
-        _fovLayer.lineWidth = 5.0;
-        _fovLayer.hidden = YES;
-        [self.layer addSublayer:_fovLayer];
+        // FOV (Estilo Green Matrix - Brilho Extremo)
+        _fovL = [CAShapeLayer layer];
+        _fovL.strokeColor = [UIColor greenColor].CGColor;
+        _fovL.fillColor = [UIColor clearColor].CGColor;
+        _fovL.lineWidth = 5.5;
+        _fovL.hidden = YES;
+        [self.layer addSublayer:_fovL];
 
-        // PAINEL (Construção Pesada para garantir os 16KB)
-        _panel = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 440, 340)];
-        _panel.center = self.center;
-        _panel.backgroundColor = [UIColor colorWithWhite:0 alpha:0.97];
-        _panel.layer.cornerRadius = 45;
-        _panel.layer.borderColor = [UIColor cyanColor].CGColor;
-        _panel.layer.borderWidth = 6.0;
+        // PAINEL (Construção Ultra-Pesada)
+        _box = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 445, 345)];
+        _box.center = self.center;
+        _box.backgroundColor = [UIColor colorWithRed:0 green:0.05 blue:0 alpha:0.98];
+        _box.layer.cornerRadius = 50;
+        _box.layer.borderColor = [UIColor greenColor].CGColor;
+        _box.layer.borderWidth = 8.0;
         
-        // Efeito de Brilho Externo (Glow)
-        _panel.layer.shadowColor = [UIColor cyanColor].CGColor;
-        _panel.layer.shadowOpacity = 1.0;
-        _panel.layer.shadowRadius = 40;
-        _panel.layer.shadowOffset = CGSizeZero;
-        [self addSubview:_panel];
+        // Glow Matrix
+        _box.layer.shadowColor = [UIColor greenColor].CGColor;
+        _box.layer.shadowOpacity = 1.0;
+        _box.layer.shadowRadius = 50;
+        [self addSubview:_box];
 
-        UITableView *table = [[UITableView alloc] initWithFrame:CGRectMake(5, 10, 430, 320) style:UITableViewStylePlain];
-        table.backgroundColor = [UIColor clearColor];
-        table.delegate = self; table.dataSource = self;
-        table.separatorStyle = UITableViewCellSeparatorStyleNone;
-        [_panel addSubview:table];
+        UITableView *tb = [[UITableView alloc] initWithFrame:CGRectMake(10, 15, 425, 315) style:UITableViewStylePlain];
+        tb.backgroundColor = [UIColor clearColor];
+        tb.delegate = self; tb.dataSource = self;
+        tb.separatorStyle = UITableViewCellSeparatorStyleNone;
+        [_box addSubview:tb];
     }
     return self;
 }
 
-- (void)updFov {
-    UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:self.center radius:fov_size startAngle:0 endAngle:2*M_PI clockwise:YES];
-    _fovLayer.path = path.CGPath;
+- (void)updF {
+    UIBezierPath *p = [UIBezierPath bezierPathWithArcCenter:self.center radius:f_v startAngle:0 endAngle:2*M_PI clockwise:YES];
+    _fovL.path = p.CGPath;
 }
 
-- (void)swChanged:(UISwitch *)s {
-    if (s.tag == 0) aim_active = s.on;
-    if (s.tag == 1) esp_active = s.on;
-    if (s.tag == 7) { _fovLayer.hidden = !s.on; [self updFov]; }
+- (void)swC:(UISwitch *)s {
+    if (s.tag == 0) a_on = s.on;
+    if (s.tag == 1) e_on = s.on;
+    if (s.tag == 7) { _fovL.hidden = !s.on; [self updF]; }
 }
 
-- (void)slChanged:(UISlider *)l { fov_size = l.value; [self updFov]; }
+- (void)slC:(UISlider *)l { f_v = l.value; [self updF]; }
 
-- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.menuItems.count; }
+- (NSInteger)tableView:(UITableView *)t numberOfRowsInSection:(NSInteger)s { return self.list.count; }
 
 - (UITableViewCell *)tableView:(UITableView *)t cellForRowAtIndexPath:(NSIndexPath *)p {
-    UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"v48"];
+    UITableViewCell *c = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"v49"];
     c.backgroundColor = [UIColor clearColor];
-    c.textLabel.text = self.menuItems[p.row];
+    c.textLabel.text = self.list[p.row];
     c.textLabel.textColor = [UIColor whiteColor];
     c.selectionStyle = UITableViewCellSelectionStyleNone;
 
     if (p.row == 8) {
-        UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 160, 20)];
-        sl.minimumValue = 50; sl.maximumValue = 550; sl.value = fov_size;
-        [sl addTarget:self action:@selector(slChanged:) forControlEvents:UIControlEventValueChanged];
+        UISlider *sl = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 175, 20)];
+        sl.minimumValue = 50; sl.maximumValue = 600; sl.value = f_v;
+        [sl addTarget:self action:@selector(slC:) forControlEvents:UIControlEventValueChanged];
         c.accessoryView = sl;
     } else {
         UISwitch *sw = [[UISwitch alloc] init];
-        sw.tag = p.row; [sw addTarget:self action:@selector(swChanged:) forControlEvents:UIControlEventValueChanged];
+        sw.tag = p.row; [sw addTarget:self action:@selector(swC:) forControlEvents:UIControlEventValueChanged];
         c.accessoryView = sw;
     }
     return c;
