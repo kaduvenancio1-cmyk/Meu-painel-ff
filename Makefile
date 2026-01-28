@@ -1,14 +1,7 @@
-ARCHS = arm64 arm64e
-DEBUG = 0
-FINALPACKAGE = 1
+# Desativa a otimização de tamanho e mantém os símbolos
+DEBUG = 1
+FINALPACKAGE = 0
+GO_EASY_ON_ME = 1
 
-include $(THEOS)/makefiles/common.mk
-
-TWEAK_NAME = Painel
-
-# O nome abaixo deve ser EXATAMENTE Tweak.mm (com T maiúsculo)
-Painel_FILES = Tweak.mm
-Painel_FRAMEWORKS = UIKit Foundation Security QuartzCore
-Painel_CFLAGS = -fobjc-arc
-
-include $(THEOS_MAKE_PATH)/tweak.mk
+# Força o linker a NÃO limpar o arquivo (Isso vai explodir o tamanho!)
+Painel_LDFLAGS += -Wl,-dead_strip_off -Wl,-no_compact_unwind
